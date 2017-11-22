@@ -1,0 +1,51 @@
+ffmpeg version 3.3.4-2 Copyright (c) 2000-2017 the FFmpeg developers
+  built with gcc 7 (Ubuntu 7.2.0-8ubuntu2)
+  configuration: --prefix=/usr --extra-version=2 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --enable-gpl --disable-stripping --enable-avresample --enable-avisynth --enable-gnutls --enable-ladspa --enable-libass --enable-libbluray --enable-libbs2b --enable-libcaca --enable-libcdio --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libmp3lame --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-librubberband --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libssh --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libvpx --enable-libwavpack --enable-libwebp --enable-libx265 --enable-libxvid --enable-libzmq --enable-libzvbi --enable-omx --enable-openal --enable-opengl --enable-sdl2 --enable-libdc1394 --enable-libiec61883 --enable-chromaprint --enable-frei0r --enable-libopencv --enable-libx264 --enable-shared
+  WARNING: library configuration mismatch
+  avcodec     configuration: --prefix=/usr --extra-version=2 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --enable-gpl --disable-stripping --enable-avresample --enable-avisynth --enable-gnutls --enable-ladspa --enable-libass --enable-libbluray --enable-libbs2b --enable-libcaca --enable-libcdio --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libmp3lame --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-librubberband --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libssh --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libvpx --enable-libwavpack --enable-libwebp --enable-libx265 --enable-libxvid --enable-libzmq --enable-libzvbi --enable-omx --enable-openal --enable-opengl --enable-sdl2 --enable-libdc1394 --enable-libiec61883 --enable-chromaprint --enable-frei0r --enable-libopencv --enable-libx264 --enable-shared --enable-version3 --disable-doc --disable-programs --enable-libopencore_amrnb --enable-libopencore_amrwb --enable-libtesseract --enable-libvo_amrwbenc --enable-netcdf
+  libavutil      55. 58.100 / 55. 58.100
+  libavcodec     57. 89.100 / 57. 89.100
+  libavformat    57. 71.100 / 57. 71.100
+  libavdevice    57.  6.100 / 57.  6.100
+  libavfilter     6. 82.100 /  6. 82.100
+  libavresample   3.  5.  0 /  3.  5.  0
+  libswscale      4.  6.100 /  4.  6.100
+  libswresample   2.  7.100 /  2.  7.100
+  libpostproc    54.  5.100 / 54.  5.100
+Input #0, image2, from 'image_%04d.bmp':
+  Duration: 00:00:02.56, start: 0.000000, bitrate: N/A
+    Stream #0:0: Video: bmp, bgr24, 200x200, 25 fps, 25 tbr, 25 tbn, 25 tbc
+File 'out.mp4' already exists. Overwrite ? [y/N] Stream mapping:
+  Stream #0:0 -> #0:0 (bmp (native) -> h264 (libx264))
+Press [q] to stop, [?] for help
+[libx264 @ 0x558ccdb02480] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX
+[libx264 @ 0x558ccdb02480] profile High, level 1.3
+[libx264 @ 0x558ccdb02480] 264 - core 148 r2795 aaa9aa8 - H.264/MPEG-4 AVC codec - Copyleft 2003-2017 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=6 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to 'out.mp4':
+  Metadata:
+    encoder         : Lavf57.71.100
+    Stream #0:0: Video: h264 (libx264) ([33][0][0][0] / 0x0021), yuv420p, 200x200, q=-1--1, 60 fps, 15360 tbn, 60 tbc
+    Metadata:
+      encoder         : Lavc57.89.100 libx264
+    Side data:
+      cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: -1
+frame=  639 fps=0.0 q=-1.0 Lsize=      76kB time=00:00:10.60 bitrate=  58.6kbits/s dup=575 drop=0 speed=39.4x    
+video:67kB audio:0kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: 12.292023%
+[libx264 @ 0x558ccdb02480] frame I:3     Avg QP:23.36  size:  5548
+[libx264 @ 0x558ccdb02480] frame P:161   Avg QP:25.79  size:   229
+[libx264 @ 0x558ccdb02480] frame B:475   Avg QP:33.87  size:    31
+[libx264 @ 0x558ccdb02480] consecutive B-frames:  0.8%  0.3%  0.0% 98.9%
+[libx264 @ 0x558ccdb02480] mb I  I16..4:  4.5% 41.6% 53.8%
+[libx264 @ 0x558ccdb02480] mb P  I16..4:  0.1%  0.7%  0.1%  P16..4:  9.9%  0.3%  0.6%  0.0%  0.0%    skip:88.4%
+[libx264 @ 0x558ccdb02480] mb B  I16..4:  0.1%  1.1%  0.0%  B16..8:  7.7%  0.0%  0.0%  direct: 0.0%  skip:91.1%  L0:36.5% L1:63.0% BI: 0.4%
+[libx264 @ 0x558ccdb02480] 8x8 transform intra:76.1% inter:34.2%
+[libx264 @ 0x558ccdb02480] coded y,uvDC,uvAC intra: 11.6% 1.8% 0.0% inter: 1.4% 0.0% 0.0%
+[libx264 @ 0x558ccdb02480] i16 v,h,dc,p: 35% 49% 16%  0%
+[libx264 @ 0x558ccdb02480] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 17%  4% 78%  1%  0%  0%  0%  0%  0%
+[libx264 @ 0x558ccdb02480] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 40% 14% 24%  4%  3%  4%  4%  4%  3%
+[libx264 @ 0x558ccdb02480] i8c dc,h,v,p: 86%  2% 12%  0%
+[libx264 @ 0x558ccdb02480] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 0x558ccdb02480] ref P L0: 88.1%  0.3% 10.4%  1.2%
+[libx264 @ 0x558ccdb02480] ref B L0: 56.7% 40.8%  2.6%
+[libx264 @ 0x558ccdb02480] ref B L1: 94.6%  5.4%
+[libx264 @ 0x558ccdb02480] kb/s:51.40
