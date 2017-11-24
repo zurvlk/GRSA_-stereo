@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <float.h>
+#include <math.h>
 
 #define INF DBL_MAX
 
@@ -60,10 +61,6 @@ int cmparray(int *array1, int *array2, int size) {
     }
     return 0;
 }
-
-
-
-
 
 void cpyarray(int *terget, int *source, int size) {
     int i;
@@ -206,15 +203,29 @@ int gen_submodular_subsets(int label_size, int range_size, int **ls) {
 }
 
 
-double pairwise(double i, double j, double T) {
-    return theta(i - j, T);
+double pairwise(double i, double j, double T, int lamda) {
+    return lamda * theta(i - j, T);
 }
 
 double data(int i, int label) {
     return 1.0 * dabs(label, i);
 }
 
-double energy(Graph *G, int *label, int *I, double T) {
+
+double data_str(int i, int label, int width, int *I_left, int *I_right) {
+    double data = 0;
+    // return 1.0 * dabs(label, I_left[i]);
+    //leftの中のものがどこにあるか
+    if ((i - 1) / width == (i - label - 1) / width) {
+        data = (I_left[i] - I_right[i - label]) * (I_left[i] - I_right[i - label]);
+    }else data = INF;
+    
+
+    return sqrt(data);
+    
+}
+
+double energy(Graph *G, int *label, int *I, double T, int lamda) {
     int i;
     double energy = 0;
     //* Dterm
@@ -224,7 +235,23 @@ double energy(Graph *G, int *label, int *I, double T) {
     // */
     // Vterm
     for (i = 1; i <= G->m - 2 * (G->n - 2); i++) {
-        energy += pairwise(label[G->tail[i]], label[G->head[i]], T);
+        energy += pairwise(label[G->tail[i]], label[G->head[i]], T, lamda);
+    }
+    return energy;
+}
+
+double energy_str(Graph *G, int *label,  double T, int lamda, int width, int *I_left, int *I_right) {
+    int i;
+    double energy = 0;
+    //* Dterm
+    for (i = 1; i <= G->n - 2; i++) {
+        energy += data_str(i, label[i], width, I_left, I_right);
+        // energy += data(I_left[i], label[i]);
+    }
+    // */
+    // Vterm
+    for (i = 1; i <= G->m - 2 * (G->n - 2); i++) {
+        energy += pairwise(label[G->tail[i]], label[G->head[i]], T, lamda);
     }
     return energy;
 }
@@ -302,13 +329,13 @@ double phi (int i, int j, int *ls, double T) {
     return p;
 }
 
-double nn(int i, int label, int *ls, double T) {
+double nn(int i, int label, int *ls, double T, int lamda) {
     double p = 0;
-    p = pairwise(ls[i], label, T);
+    p = pairwise(ls[i], label, T, lamda);
     return p;
 }
 
-int nnp_4_grsa(int i, int j, int height, int width, int *ls, int *label, double T) {
+int nnp_4_grsa(int i, int j, int height, int width, int *ls, int *label, double T, int lamda) {
     int grids_node = height * width;
 
     double nnp_total = 0;
@@ -317,7 +344,7 @@ int nnp_4_grsa(int i, int j, int height, int width, int *ls, int *label, double 
         // 画素が一番上の行に存在しないとき(iの上が空白でないとき)
         if (!isin_array(ls, label[i - width])){
             // iの上の点がLs内に含まれない
-            nnp_total += pairwise(ls[j], label[i - width], T) ;
+            nnp_total += pairwise(ls[j], label[i - width], T, lamda) ;
         }
     }
     
@@ -325,7 +352,7 @@ int nnp_4_grsa(int i, int j, int height, int width, int *ls, int *label, double 
         // 画素が一番下の行に存在しないとき(iの下が空白でないとき)
         if (!isin_array(ls, label[i + width])){
             // iの下の点がLs内に含まれない
-            nnp_total += pairwise(ls[j], label[i + width], T) ;
+            nnp_total += pairwise(ls[j], label[i + width], T, lamda) ;
         }
     }
 
@@ -333,7 +360,7 @@ int nnp_4_grsa(int i, int j, int height, int width, int *ls, int *label, double 
         // 画素が一番左の列に存在しないとき(iの左が空白でないとき)
         if (!isin_array(ls, label[i - 1])){
             // iの左の点がLs内に含まれない
-            nnp_total += pairwise(ls[j], label[i - 1], T) ;
+            nnp_total += pairwise(ls[j], label[i - 1], T, lamda) ;
         }
     }
 
@@ -341,15 +368,14 @@ int nnp_4_grsa(int i, int j, int height, int width, int *ls, int *label, double 
         // 画素が一番右の列に存在しないとき(iの右が空白でないとき)
         if (!isin_array(ls, label[i + 1])){
             // iの右の点がLs内に含まれない
-            nnp_total += pairwise(ls[j], label[i + 1], T) ;
+            nnp_total += pairwise(ls[j], label[i + 1], T, lamda) ;
         }
     }
     return nnp_total;
 }
 
-
 // set_edge for grsa
-void set_edge(Graph *G, int height, int width, int *ls, int *label, int *I, double T) {
+void set_edge(Graph *G, int height, int width, int *ls, int *label, int *I, double T, int lamda) {
     int i, j, k, l;
     int tail, head, t_base, h_base, grids_node, source, sink, edge_count, current_edge;
     int s2i_begin, i2t_begin, depth_begin;
@@ -394,7 +420,7 @@ void set_edge(Graph *G, int height, int width, int *ls, int *label, int *I, doub
             head = head + grids_node;
             setEdge(G, edge_count, tail, head, 0);
             if(isin_array(ls , label[i])) {
-                G->capa[edge_count] = data(I[i],ls[j]) + nnp_4_grsa(i, j, height, width, ls, label, T);
+                G->capa[edge_count] = data(I[i],ls[j]) + nnp_4_grsa(i, j, height, width, ls, label, T, lamda);
             }
 
             if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
@@ -408,7 +434,7 @@ void set_edge(Graph *G, int height, int width, int *ls, int *label, int *I, doub
     for (i = 1; i <= grids_node; i++) {
         setEdge(G, edge_count, i + grids_node * (ls[0] - 1), sink, 0);
         if(isin_array(ls , label[i])) {
-            G->capa[edge_count] = data(I[i], ls[ls[0]]) + nnp_4_grsa(i, ls[0], height, width, ls, label, T);
+            G->capa[edge_count] = data(I[i], ls[ls[0]]) + nnp_4_grsa(i, ls[0], height, width, ls, label, T, lamda);
         }
 
         if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
@@ -538,3 +564,385 @@ void set_edge(Graph *G, int height, int width, int *ls, int *label, int *I, doub
     // printf("total edge : %d\n", edge_count - 1);
     return;
 }
+
+void set_edge_str(Graph *G, int height, int width, int *ls, int *label, double T, int lamda, int *I_left, int *I_right) {
+    int i, j, k, l;
+    int tail, head, t_base, h_base, grids_node, source, sink, edge_count, current_edge;
+    int s2i_begin, i2t_begin, depth_begin;
+    double *min;
+
+
+    if (((min = (double *) malloc(sizeof(double) * G->n))) == NULL) {
+        fprintf(stderr, "set_all_edge(): ERROR [min = malloc()]\n");
+        exit (EXIT_FAILURE);
+    }
+    // min[i]の全てにINFを設定
+    for (i = 0; i < G->n; i++) min[i] = INF;
+
+    // 格子部分1階層分の点数合計
+    grids_node = height * width;
+
+    for (i = 1; i < G->n; i++) G->capa[i] = 0;
+    source = grids_node * ls[0] + 1;
+    sink = source + 1;
+
+    setSource(G, source);
+    setSink(G, sink);
+
+    edge_count = 1;
+    // source->i1
+    s2i_begin = edge_count;
+    for (i = 1; i <= grids_node; i++) {
+        setEdge(G, edge_count, source, i, 0);
+        if(isin_array(ls, label[i])) {
+            G->capa[edge_count] = INF;
+        }
+        if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
+        edge_count++;
+    }
+    
+    // depth
+    depth_begin = edge_count;
+    for (i = 1; i <= grids_node; i++) {
+        tail = i;
+        head = i;
+        for (j = 1; j < ls[0]; j++) {
+            head = head + grids_node;
+            setEdge(G, edge_count, tail, head, 0);
+            if(isin_array(ls , label[i])) {
+                // G->capa[edge_count] = data(I_left[i],ls[j]) + nnp_4_grsa(i, j, height, width, ls, label, T, lamda);
+                G->capa[edge_count] = data_str(i, ls[j], width, I_left, I_right) + nnp_4_grsa(i, j, height, width, ls, label, T, lamda);
+            }
+
+            if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
+            edge_count++;
+            tail = head;
+        }
+    }
+    // ik->sink
+    i2t_begin = edge_count;
+    // rk = r(beta , label_size, grids_edge);
+    for (i = 1; i <= grids_node; i++) {
+        setEdge(G, edge_count, i + grids_node * (ls[0] - 1), sink, 0);
+        if(isin_array(ls , label[i])) {
+            // G->capa[edge_count] = data(I_left[i], ls[ls[0]]) + nnp_4_grsa(i, ls[0], height, width, ls, label, T, lamda);
+            G->capa[edge_count] = data_str(i, ls[ls[0]], width, I_left, I_right) + nnp_4_grsa(i, ls[0], height, width, ls, label, T, lamda);
+        }
+
+        if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
+        edge_count++;
+    }
+
+
+    // reverce edge
+    // depth
+    for (i = 1; i <= grids_node; i++) {
+        tail = i;
+        head = i;
+        for (j = 1; j < ls[0]; j++) {
+            head = head + grids_node;
+            setEdge(G, edge_count, head, tail, 0);
+            if(isin_array(ls, label[i])) {
+                G->capa[edge_count] = INF;
+            }
+            edge_count++;
+            tail = head;
+        }
+    }
+
+
+    // new codes
+    // horizonal
+    for (i = 1; i <= height; i++) {
+        for (j = 1; j < width; j++) {
+            t_base =  (i - 1) * width + j;
+            h_base =  t_base + 1;
+            for (k = 1; k < ls[0]; k++) {
+                tail = t_base + k * grids_node;
+                for (l = 1; l < ls[0]; l++) {
+                    head = h_base + l * grids_node;
+                    setEdge(G, edge_count, tail, head, 0);
+                    if(isin_array(ls, label[t_base]) && isin_array(ls, label[h_base])) {
+                        // head, tail in label_index
+                        G->capa[edge_count] = phi(k + 1, l + 1, ls, T);
+                    }
+                    edge_count++;
+                }
+            }
+        }
+    }
+    
+    // vertical
+    for (i = 1; i < height ; i++){
+        for (j = 1; j < width + 1; j++) {
+            t_base = (i - 1) * width + j;
+            h_base = t_base + width;
+            for (k = 1; k < ls[0]; k++) {
+                tail = t_base + k * grids_node;
+                for (l = 1; l < ls[0]; l++) {
+                    head = h_base + l * grids_node;
+                    setEdge(G, edge_count, tail, head, 0);
+                    if(isin_array(ls, label[t_base]) && isin_array(ls, label[h_base])) {
+                        G->capa[edge_count] = phi(k + 1, l + 1, ls, T);
+                        // head, tail in label_index
+                    }
+                    edge_count++;
+                }
+            }
+        }
+    }
+
+
+
+    // new codes
+    // horizonal
+    for (i = 1; i <= height; i++) {
+        for (j = 1; j < width; j++) {
+            t_base =  (i - 1) * width + j;
+            h_base =  t_base + 1;
+            for (k = 1; k < ls[0]; k++) {
+                tail = t_base + k * grids_node;
+                for (l = 1; l < ls[0]; l++) {
+                    head = h_base + l * grids_node;
+                    setEdge(G, edge_count, head, tail, 0);
+                    if(isin_array(ls, label[t_base]) && isin_array(ls, label[h_base])) {
+                        G->capa[edge_count] = phi(l + 1, k + 1, ls, T);
+                    }
+                    edge_count++;
+                }
+            }
+        }
+    }
+
+    // vertical
+    for (i = 1; i < height ; i++){
+        for (j = 1; j < width + 1; j++) {
+            t_base = (i - 1) * width + j;
+            h_base = t_base + width;
+            for (k = 1; k < ls[0]; k++) {
+                tail = t_base + k * grids_node;
+                for (l = 1; l < ls[0]; l++) {
+                    head = h_base + l * grids_node;
+                    setEdge(G, edge_count, head, tail, 0);
+                    if(isin_array(ls, label[t_base]) && isin_array(ls, label[h_base])) {
+                        G->capa[edge_count] = phi(l + 1, k + 1, ls, T);
+                    }
+                    edge_count++;
+                }
+            }
+        }
+    }
+
+
+    //  s->tの一連の枝から定数値を引く処理
+    for (i = s2i_begin; i <= grids_node; i++) {
+        G->capa[i] -= min[i];
+    }
+    for (i = 1; i <= grids_node; i++) {
+        G->capa[i + i2t_begin - 1] -= min[i];
+    }
+    current_edge = depth_begin;
+    for (i = 1; i <= grids_node; i++) {
+        for (j = 1; j < ls[0]; j++) {
+            G->capa[current_edge] -=min[i];
+            current_edge++;
+        }
+    }
+
+    free(min);
+    
+    // printf("total edge : %d\n", edge_count - 1);
+    return;
+}
+/**
+void set_edge_str(Graph *G, int height, int width, int *ls, int *label, double T, int lamda, int *I_right, int *I_left) {
+    int i, j, k, l;
+    int tail, head, t_base, h_base, grids_node, source, sink, edge_count, current_edge;
+    int s2i_begin, i2t_begin, depth_begin;
+    double *min;
+
+
+    if (((min = (double *) malloc(sizeof(double) * G->n))) == NULL) {
+        fprintf(stderr, "set_all_edge(): ERROR [min = malloc()]\n");
+        exit (EXIT_FAILURE);
+    }
+    // min[i]の全てにINFを設定
+    for (i = 0; i < G->n; i++) min[i] = INF;
+
+    // 格子部分1階層分の点数合計
+    grids_node = height * width;
+
+    for (i = 1; i < G->n; i++) G->capa[i] = 0;
+    source = grids_node * ls[0] + 1;
+    sink = source + 1;
+
+    setSource(G, source);
+    setSink(G, sink);
+
+    edge_count = 1;
+    // source->i1
+    s2i_begin = edge_count;data_str(i, ls[ls[0]], width, I_left, I_right)
+    for (i = 1; i <= grids_node; i++) {
+        setEdge(G, edge_count, source, i, 0);
+        if(isin_array(ls, label[i])) {
+            G->capa[edge_count] = INF;
+        }
+        if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
+        edge_count++;
+    }
+    
+    // depth
+    depth_begin = edge_count;
+    for (i = 1; i <= grids_node; i++) {
+        tail = i;
+        head = i;
+        for (j = 1; j < ls[0]; j++) {
+            head = head + grids_node;
+            setEdge(G, edge_count, tail, head, 0);
+            if(isin_array(ls , label[i])) {
+                G->capa[edge_count] = data(I_left[i],ls[j]) + nnp_4_grsa(i, j, height, width, ls, label, T, lamda);
+            }
+
+            if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
+            edge_count++;
+            tail = head;
+        }
+    }
+    // ik->sink
+    i2t_begin = edge_count;
+    // rk = r(beta , label_size, grids_edge);
+    for (i = 1; i <= grids_node; i++) {
+        setEdge(G, edge_count, i + grids_node * (ls[0] - 1), sink, 0);
+        if(isin_array(ls , label[i])) {
+            // G->capa[edge_count] = data_str(i, ls[ls[0]], width, I_left, I_right) + nnp_4_grsa(i, ls[0], height, width, ls, label, T, lamda);
+            G->capa[edge_count] = data(I_left[i], ls[ls[0]]) + nnp_4_grsa(i, ls[0], height, width, ls, label, T, lamda);
+        }
+
+        if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
+        edge_count++;
+    }
+
+
+    // reverce edge
+    // depth
+    for (i = 1; i <= grids_node; i++) {
+        tail = i;
+        head = i;
+        for (j = 1; j < ls[0]; j++) {
+            head = head + grids_node;
+            setEdge(G, edge_count, head, tail, 0);
+            if(isin_array(ls, label[i])) {
+                G->capa[edge_count] = INF;
+            }
+            edge_count++;
+            tail = head;
+        }
+    }
+
+    
+
+    // new codes
+    // horizonal
+    for (i = 1; i <= height; i++) {
+        for (j = 1; j < width; j++) {
+            t_base =  (i - 1) * width + j;
+            h_base =  t_base + 1;
+            for (k = 1; k < ls[0]; k++) {
+                tail = t_base + k * grids_node;
+                for (l = 1; l < ls[0]; l++) {
+                    head = h_base + l * grids_node;
+                    setEdge(G, edge_count, tail, head, 0);
+                    if(isin_array(ls, label[t_base]) && isin_array(ls, label[h_base])) {
+                        // head, tail in label_index
+                        G->capa[edge_count] = phi(k + 1, l + 1, ls, T);
+                    }
+                    edge_count++;
+                }
+            }
+        }
+    }
+    
+    // vertical
+    for (i = 1; i < height ; i++){
+        for (j = 1; j < width + 1; j++) {
+            t_base = (i - 1) * width + j;
+            h_base = t_base + width;
+            for (k = 1; k < ls[0]; k++) {
+                tail = t_base + k * grids_node;
+                for (l = 1; l < ls[0]; l++) {
+                    head = h_base + l * grids_node;
+                    setEdge(G, edge_count, tail, head, 0);
+                    if(isin_array(ls, label[t_base]) && isin_array(ls, label[h_base])) {
+                        G->capa[edge_count] = phi(k + 1, l + 1, ls, T);
+                        // head, tail in label_index
+                    }
+                    edge_count++;
+                }
+            }
+        }
+    }
+
+
+
+
+    // new codes
+    // horizonal
+    for (i = 1; i <= height; i++) {
+        for (j = 1; j < width; j++) {
+            t_base =  (i - 1) * width + j;
+            h_base =  t_base + 1;
+            for (k = 1; k < ls[0]; k++) {
+                tail = t_base + k * grids_node;
+                for (l = 1; l < ls[0]; l++) {
+                    head = h_base + l * grids_node;
+                    setEdge(G, edge_count, head, tail, 0);
+                    if(isin_array(ls, label[t_base]) && isin_array(ls, label[h_base])) {
+                        G->capa[edge_count] = phi(l + 1, k + 1, ls, T);
+                    }
+                    edge_count++;
+                }
+            }
+        }
+    }
+
+    // vertical
+    for (i = 1; i < height ; i++){
+        for (j = 1; j < width + 1; j++) {
+            t_base = (i - 1) * width + j;
+            h_base = t_base + width;
+            for (k = 1; k < ls[0]; k++) {
+                tail = t_base + k * grids_node;
+                for (l = 1; l < ls[0]; l++) {
+                    head = h_base + l * grids_node;
+                    setEdge(G, edge_count, head, tail, 0);
+                    if(isin_array(ls, label[t_base]) && isin_array(ls, label[h_base])) {
+                        G->capa[edge_count] = phi(l + 1, k + 1, ls, T);
+                    }
+                    edge_count++;
+                }
+            }
+        }
+    }
+
+
+    //  s->tの一連の枝から定数値を引く処理
+    for (i = s2i_begin; i <= grids_node; i++) {
+        G->capa[i] -= min[i];
+    }
+    for (i = 1; i <= grids_node; i++) {
+        G->capa[i + i2t_begin - 1] -= min[i];
+    }
+    current_edge = depth_begin;
+    for (i = 1; i <= grids_node; i++) {
+        for (j = 1; j < ls[0]; j++) {
+            G->capa[current_edge] -=min[i];
+            current_edge++;
+        }
+    }
+
+    free(min);
+    
+    // printf("total edge : %d\n", edge_count - 1);
+    return;
+}
+**/

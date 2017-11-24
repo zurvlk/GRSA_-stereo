@@ -14,8 +14,7 @@
 
 */
 
-
-#define _OUTPUT_T_ 1     // BK-maxflow後のtの状態をファイルに出力 0:出力しない 1:出力する
+#define _OUTPUT_T_ 0     // BK-maxflow後のtの状態をファイルに出力 0:出力しない 1:出力する
 #define _OUTPUT_INFO_ 0     // デバッグ情報出力 0:出力しない 1:出力する
 #define _OUTPUT_GRAPH_ 0    // グラフ情報出力  0:出力しない 1:出力する
 #define _OUTPUT_PROGRESS_ 0 // 処理過程ファイル出力 0:出力しない 1:出力する
@@ -26,22 +25,30 @@
 
 int main(int argc, char *argv[]) {
     int i, j, k, l, node, edge, grids_node, flag, size, ccvex, prev;
-    int scale, label_max, grids_edge, count, last_move, ci;
-    int *I, *t, *label, *newlabel, *label_index;
+    int scale, label_max, grids_edge, count, last_move, ci, large_array, total_ss_count;
+    int *I_left, *I_right, *t, *label, *newlabel, *label_index;
+    int **ls;
     int convex[10][2];
     // I->入力画像の輝度, t->2値変数, label->ラベル付け
     int label_size = 16;
     int range_size = 4;
     int errlog = 0;
-    int **ls, large_array, total_ss_count;
+    int error_count = 0;
+    int lamda = 1;
     double decreace, prev_energy, T = INF;
     double *f;
     char output_file[100];
     clock_t start;
-    img image, output;
+    img left, right, output, truth;
     // Ge:エネルギー計算用
     Graph G, Ge;
+
+    char imgleft[100];
+    char imgright[100];
+    char imgtruth[100];
     
+    // スタックサイズ変更
+    system("ulimit -s unlimited");
 
 #if _OUTPUT_INFO_
     double maxflow;
@@ -60,18 +67,18 @@ int main(int argc, char *argv[]) {
     char pf[100];
     system("rm output/*.bmp &> /dev/null");
 #endif
-
-    if (argc != 2 && argc != 3 && argc != 6 && argc != 7) {
-        printf("Usage: %s <input_file> <output_file(option)> <label_size(option)> <range_size(option)> <Vpq(fp, fq) 0:|fp - fq| 1 :(fp - f_q)^2 (option)> <T (option)>\n", argv[0]);
+    function = 1;
+    if (argc != 2 && argc != 3 && argc != 5 && argc != 6) {
+        printf("Usage: %s <input_file> <output_file(option)> <range_size(option)> <scale(option)> <lamda (option)>\n", argv[0]);
         return 1;
     }
-    function = 0;
+
     if (argc == 2) strcpy(output_file, "/dev/null");
     else strcpy(output_file, argv[2]);
-    if (argc == 6 || argc == 7) {
-        label_size = atoi(argv[3]);
-        range_size = atoi(argv[4]);
-        function = atoi(argv[5]);
+    if (argc == 5 || argc == 6) {
+        range_size = atoi(argv[3]);
+        scale = atoi(argv[4]);
+        lamda = atoi(argv[5]);
         if(argc == 7) T = atof(argv[6]);
     }
 
@@ -80,8 +87,8 @@ int main(int argc, char *argv[]) {
         exit (EXIT_FAILURE);
     }
 
+    label_size = 256 / scale;
     label_max = label_size - 1;
-    scale = 256 / label_size;
     if (range_size < 2) {
         fprintf(stderr, "Error! Range size == %d \n", range_size);
         exit (EXIT_FAILURE);
@@ -90,6 +97,14 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error! label_size < range_size \n");
         exit (EXIT_FAILURE);
     }
+
+    strcpy(imgleft, argv[1]);
+    strcpy(imgright, argv[1]);
+    strcpy(imgtruth, argv[1]);
+
+    strcat(imgleft, "left.bmp");
+    strcat(imgright, "right.bmp");
+    strcat(imgtruth, "truth.bmp");
 
     T = theta(range_size, INF);
     // T = range_size;
@@ -271,32 +286,48 @@ int main(int argc, char *argv[]) {
     if(theta(2, 2 * 2) > 2) printf("Vpq(fp, fq) = (fp - fq)^2\n");
     else printf("Vpq(fp, fq) = |fp - fq|\n");
 
-    ReadBmp(argv[1], &image);
-    ReadBmp(argv[1], &output);
+    ReadBmp(imgleft, &left);
+    ReadBmp(imgright, &right);
+    ReadBmp(imgtruth, &truth);
+    ReadBmp(imgtruth, &output);
 
-    grids_node = image.height * image.width;
+    Gray(&left, &left);
+    Gray(&right, &right);
+    Gray(&truth, &truth);
+
+    grids_node = left.height * left.width;
 
 
-    if ((I = (int *)malloc(sizeof(int) * (grids_node + 1))) == NULL) {
-        fprintf(stderr, "Error!:malloc[main()->I]\n");
+    if ((I_left = (int *)malloc(sizeof(int) * (grids_node + 1))) == NULL) {
+        fprintf(stderr, "Error!:malloc[main()->I_left]\n");
+        exit(EXIT_FAILURE);
+    }
+    if ((I_right = (int *)malloc(sizeof(int) * (grids_node + 1))) == NULL) {
+        fprintf(stderr, "Error!:malloc[main()->I_right]\n");
         exit(EXIT_FAILURE);
     }
 
-    printf("height %ld, width %ld\n", image.height, image.width);
-    for (i = 0; i <  image.height; i++) {
-        for (j = 0; j < image.width; j++) {
-            if(image.data[i][j].r / scale > label_max) I[i * image.width + j + 1] = label_max;
-            else I[i * image.width + j + 1] = image.data[i][j].r / scale;
+
+
+    printf("height %ld, width %ld\n", left.height, left.width);
+    for (i = 0; i <  left.height; i++) {
+        for (j = 0; j < left.width; j++) {
+            I_left[i * left.width + j + 1] = left.data[i][j].r / scale;
+        }
+    }
+    for (i = 0; i <  right.height; i++) {
+        for (j = 0; j < right.width; j++) {
+            I_right[i * right.width + j + 1] = right.data[i][j].r / scale;
         }
     }
 
     // エネルギー計算用一層グラフ作成
     node = grids_node + 2;
-    edge = (image.height - 1) * image.width + image.height * (image.width - 1) + 2 * grids_node;
+    edge = (left.height - 1) * left.width + left.height * (left.width - 1) + 2 * grids_node;
     newGraph(&Ge, node, edge);
 
-    // set_single_edge(&Ge, image.height, image.width);
-    set_single_edges(&Ge, image.height, image.width);
+    // set_single_edge(&Ge, left.height, left.width);
+    set_single_edges(&Ge, left.height, left.width);
     initAdjList(&Ge);
 
     if ((label = (int *) malloc(sizeof(int) * (grids_node + 1))) == NULL) {
@@ -314,9 +345,9 @@ int main(int argc, char *argv[]) {
     
     
     // 輝度から初期ラベル設定
-    for (i = 1; i <= grids_node ; i++) label[i] = I[i];
+    for (i = 1; i <= grids_node ; i++) label[i] = 0;
     cpyarray(newlabel, label, grids_node);
-    prev_energy = energy(&Ge, label, I, T);
+    prev_energy = energy_str(&Ge, label, T, lamda, left.width, I_left, I_right);
     printf("Energy (before): %.0lf\n", prev_energy);
 
 
@@ -326,14 +357,14 @@ int main(int argc, char *argv[]) {
     for (i = 1; i <= Ge.n - 2; i++) {
         // printf("t[%d] : %d\n", i, t[i]);
         fprintf(fp, "%d ", i);
-        if(i % image.width == 0) fprintf(fp, "\n");
+        if(i % left.width == 0) fprintf(fp, "\n");
         if(i % (grids_node) == 0) fprintf(fp, "-------------------------------------\n");
     }
     fprintf(fp, "init_label:\n");
     for (i = 1; i <= Ge.n - 2; i++) {
         // printf("t[%d] : %d\n", i, t[i]);
         fprintf(fp, "%d ", label[i]);
-        if(i % image.width == 0) fprintf(fp, "\n");
+        if(i % left.width == 0) fprintf(fp, "\n");
         if(i % (grids_node) == 0) fprintf(fp, "-------------------------------------\n");
     }
 
@@ -346,7 +377,7 @@ int main(int argc, char *argv[]) {
     start = clock();
 
     do {
-        prev_energy = energy(&Ge, label, I, T);
+        prev_energy = energy_str(&Ge, label, T, lamda, left.width, I_left, I_right);
         for(i = 1; i <= total_ss_count; i++) {
             if (last_move == i) {
                 flag = 1;
@@ -364,7 +395,7 @@ int main(int argc, char *argv[]) {
             for (j = 1; j <= Ge.n - 2; j++) {
                 // printf("t[%d] : %d\n", i, t[i]);
                 fprintf(fp, "%d ", isin_array(ls[i], label[j]) ? 1 : 0);
-                if(j % image.width == 0) fprintf(fp, "\n");
+                if(j % left.width == 0) fprintf(fp, "\n");
                 if(j % (grids_node) == 0) fprintf(fp, "-------------------------------------\n");
             }
             
@@ -372,18 +403,19 @@ int main(int argc, char *argv[]) {
             for (j = 1; j <= Ge.n - 2; j++) {
                 // printf("t[%d] : %d\n", i, t[i]);
                 fprintf(fp, "%d ", label[j]);
-                if(j % image.width == 0) fprintf(fp, "\n");
+                if(j % left.width == 0) fprintf(fp, "\n");
                 if(j % (grids_node) == 0) fprintf(fp, "-------------------------------------\n");
             }      
 #endif
          
             
-            node = image.height * image.width * ls[i][0] + 2;
-            grids_edge = (image.height - 1) * image.width + image.height * (image.width - 1);
+            node = left.height * left.width * ls[i][0] + 2;
+            grids_edge = (left.height - 1) * left.width + left.height * (left.width - 1);
             edge = 2 * grids_node * ls[i][0] + 2 * grids_edge * (ls[i][0] - 1) * ((ls[i][0] - 1)); 
 
             newGraph(&G, node, edge);
-            set_edge(&G, image.height, image.width, ls[i], label, I, T);
+            set_edge_str(&G, left.height, left.width, ls[i], label, T, lamda, I_left, I_right);
+            // set_edge(&G, left.height, left.width, ls[i], label, I_left, T, lamda);
             initAdjList(&G);
             
             if ((f = (double *) malloc(sizeof(double) * (G.m + 1))) == NULL) {
@@ -404,7 +436,8 @@ int main(int argc, char *argv[]) {
                 if (isin_array(ls[i], label[j])) {
                     k = j;
                     count = 0;
-                    while (t[k] == 1 && k <= ls[i][0] * grids_node) {
+                    while (k <= ls[i][0] * grids_node && t[k] == 1) {
+                        // if (k + grids_node > G.n) break;
                         k += grids_node;
                         count++;
                     }
@@ -412,12 +445,16 @@ int main(int argc, char *argv[]) {
                 } else newlabel[j] = label[j];
             }
 
-            if (energy(&Ge, newlabel, I, T) < energy(&Ge, label, I, T)) {
+            if (energy_str(&Ge, newlabel, T, lamda, left.width, I_left, I_right) < energy_str(&Ge, label, T, lamda, left.width, I_left, I_right)) {
                 last_move = i;
                 cpyarray(label, newlabel, grids_node);
 
-            } else if (energy(&Ge, newlabel, I, T) > energy(&Ge, label, I, T)) {
+            } else if (energy_str(&Ge,  newlabel, T, lamda, left.width, I_left, I_right) > energy_str(&Ge, label, T, lamda, left.width, I_left, I_right)) {
                 errlog = 1;
+                
+                printf("err %lf -> %lf\n", energy_str(&Ge,  label, T, lamda, left.width, I_left, I_right), energy_str(&Ge, newlabel, T, lamda, left.width, I_left, I_right));
+                for (j = 1; j <= ls[i][0]; j++) printf("%d ", ls[i][j]);
+                printf("\n");
             }
 
 #if _OUTPUT_T_
@@ -425,27 +462,27 @@ int main(int argc, char *argv[]) {
             for (j = 1; j <= G.n - 2; j++) {
                 // printf("t[%d] : %d\n", i, t[i]);
                 fprintf(fp, "%d ", t[j]);
-                if(j % image.width == 0) fprintf(fp, "\n");
+                if(j % left.width == 0) fprintf(fp, "\n");
                 if(j % (grids_node) == 0) fprintf(fp, "-------------------------------------\n");
             }
             fprintf(fp, "label: \n");
             for (j = 1; j <= Ge.n - 2; j++) {
                 // printf("t[%d] : %d\n", i, t[i]);
                 fprintf(fp, "%d ", newlabel[j]);
-                if(j % image.width == 0) fprintf(fp, "\n");
+                if(j % left.width == 0) fprintf(fp, "\n");
                 if(j % (grids_node) == 0) fprintf(fp, "-------------------------------------\n");
             }
 #endif
 
 #if _OUTPUT_PROGRESS_
-            for (j = 0; j <  image.height; j++) {
-                for (k = 0; k < image.width; k++) {
-                    output.data[j][k].r = label[j * image.width + k + 1] * scale;
+            for (j = 0; j <  left.height; j++) {
+                for (k = 0; k < left.width; k++) {
+                    output.data[j][k].r = label[j * left.width + k + 1] * scale;
                     output.data[j][k].g = output.data[j][k].r;
                     output.data[j][k].b = output.data[j][k].r;
                 }
             }
-            sprintf(pf, "output/image_%04d.bmp", l);
+            sprintf(pf, "output/left_%04d.bmp", l);
             WriteBmp(pf, &output);
             l++;
 #endif
@@ -460,9 +497,9 @@ int main(int argc, char *argv[]) {
  #endif
         }
         if (flag) break;
-        decreace = prev_energy - energy(&Ge, label, I, T);
+        decreace = prev_energy - energy_str(&Ge, label, T, lamda, left.width, I_left, I_right);
 #if _SHOW_EACH_ENERGY_
-        printf("Energy : %.0lf\n", energy(&Ge, label, I, T));
+        printf("Energy : %.0lf\n", energy_str(&Ge, label, T, lamda, left.width, I_left, I_right));
 #endif
     } while (decreace > 0);
     
@@ -470,19 +507,19 @@ int main(int argc, char *argv[]) {
     fprintf(fp, "result:\n");
     for (i = 1; i <= Ge.n - 2; i++) {
         fprintf(fp, "%d ", label[i]);
-        if(i % image.width == 0) fprintf(fp, "\n");
+        if(i % left.width == 0) fprintf(fp, "\n");
     }
 #endif
 
-    printf("Energy (after): %.0lf\n", energy(&Ge, label, I, T));
+    printf("Energy (after): %.0lf\n", energy_str(&Ge, label, T, lamda, left.width, I_left, I_right));
     printf("Italation: %d\n", ci);
     printf("Run time[%.2lf]\n", (double) (clock() - start) / CLOCKS_PER_SEC);
     
     
     // output to bitmap file
-    for (i = 0; i <  image.height; i++) {
-        for (j = 0; j < image.width; j++) {
-            output.data[i][j].r = label[i * image.width + j + 1] * scale;
+    for (i = 0; i <  left.height; i++) {
+        for (j = 0; j < left.width; j++) {
+            output.data[i][j].r = label[i * left.width + j + 1] * scale;
             output.data[i][j].g = output.data[i][j].r;
             output.data[i][j].b = output.data[i][j].r;
         }
@@ -490,12 +527,39 @@ int main(int argc, char *argv[]) {
     WriteBmp(output_file, &output);
     
 #if _OUTPUT_T_
-    fprintf(fp, "Energy (after): %lf\n", energy(&Ge, label, I, T));
+    fprintf(fp, "Energy (after): %lf\n", energy_str(&Ge, label, T, lamda, left.width, I_left, I_right));
     fclose(fp);
 #endif
 
     if(errlog) printf("エネルギーが増大する移動が確認されました\n");
     
+    if (strcmp(output_file, "/dev/null") != 0){
+        ReadBmp(output_file, &output);
+        // Gray(&truth, &truth);
+        Gray(&output, &output);
+
+        if (truth.data[0][0].r) {
+            for(i = 1; i <= (output.height) * (output.width); i++) {   
+                if (abs(output.data[(i - 1) / output.width][(i - 1) % output.width].r - truth.data[(i - 1) / truth.width][(i - 1) % truth.width].r ) 
+                    >= scale + 1) {
+                    error_count++;
+                }                            
+            }
+        } else {
+            for(i = 1; i <= (output.height) * (output.width); i++) {
+                if ((i - 1) / output.width >= scale && (i - 1) % output.width>=scale &&
+                    (i - 1) / output.width <= output.height - scale && (i - 1) % output.width <= output.width - scale) {
+                    if (abs(output.data[(i - 1) / output.width][(i - 1) % output.width].r - truth.data[(i - 1) / truth.width][(i - 1) % truth.width].r ) 
+                        >= scale + 1) {
+                        error_count++;
+                    }
+                }                            
+            }
+        }
+        
+        double err = 100 * error_count / (double)(truth.height * truth.width);
+        printf("%lf\n", err);
+    }
 
     // free meory
     delGraph(&Ge);
@@ -504,7 +568,8 @@ int main(int argc, char *argv[]) {
     }
     free(ls);
 
-    free(I);
+    free(I_left);
+    free(I_right);
     free(label);
     free(newlabel);
     free(label_index);
