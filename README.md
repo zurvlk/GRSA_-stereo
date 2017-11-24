@@ -1,27 +1,12 @@
-# GRSA
-一般化範囲交換を用いた画像処理プログラム 
+# GRSA for stereo imaging
+一般化範囲交換アルゴリズムを用いた画像処理プログラム 
 ### 仕様
-一般化範囲交換アルゴリズムを用いてエネルギーの最小化を試みます.  
-- D<sub>p</sub>(f<sub>p</sub>) = |I<sub>p</sub> - f<sub>p</sub>|
-- V<sub>pq</sub>(f<sub>p</sub>, f<sub>q</sub>) = |f<sub>p</sub> - f<sub>q</sub>|
-#### 記号とか
-- k:ラベルの最大値   
-- i = 0: source  
-- i = k + 1: sink  
-#### 各枝の重み設定
-そのうちちゃんと書く
-- p<sub>i</sub>とq<sub>j</sub>を結ぶ枝  
-    - w(e<sup>pq</sup><sub>ij</sub>) =(| i − j + 1 | − 2 | i − j | + | i − j − 1 |) / 2.0  
-- p<sub>i</sub>とp<sub>i+1</sub>を結ぶ枝  
-    - w(e<sup>p</sup><sub>i</sub>) = |I<sub>p</sub> - i| - ∑<sub>(p, q) ∈ E</sub> (-(|k + 1 - i| + |i + 1|) / 2.0)  
-- p<sub>i+1</sub>とp<sub>i</sub>を結ぶ枝  
-    - w(e<sup>p</sup><sub>i-</sub>) = ∞  
----
-### 不具合
-~~V<sub>pq</sub>(f<sub>p</sub>, f<sub>q</sub>) = (f<sub>p</sub> - f<sub>q</sub>)<sup>2</sup>と設定した際,期待する結果が出力されず~~  
-~~V<sub>pq</sub>(f<sub>p</sub>, f<sub>q</sub>)の条件は凸関数より,どこかにバグ🐜~~
+一般化範囲交換アルゴリズムを用いて2つの入力画像から視差を求めます.  
+- D<sub>p</sub>(f<sub>p</sub>) = ||left(p) - right(p - f<sub>p</sub>)||<sub>2</sub>
+- V<sub>pq</sub>(f<sub>p</sub>, f<sub>q</sub>) = λ*(f<sub>p</sub> - f<sub>q</sub>)<sup>2</sup>
+
 ### 更新時メモ
-- 11/8 基にするプログラムの大きなバグ修正に伴い,masterブランチ初期化.
+- 11/24 大域解の導出可能に,範囲移動時に最適解を選択できない場合あり.
 ---
 ### 参考  
-[石川 博 グラフカット 2007 年 3 月 CVIM 研究会チュートリアル／情報処理学会研究報告 2007-CVIM-158-(26) pp. 193-204.](http://www.vision.cs.chubu.ac.jp/CV-R/pdf/HiroshiCVIM2007.pdf)
+[Kangwei Liu et al.  GRMA: Generalized Range Move Algorithms for the Efficient Optimization of MRFs International Journal of Computer Vision February 2017, Volume 121, Issue 3, pp 365–390](https://link.springer.com/article/10.1007/s11263-016-0944-z)
