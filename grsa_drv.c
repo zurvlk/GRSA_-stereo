@@ -19,7 +19,7 @@
 #define _OUTPUT_GRAPH_ 0    // グラフ情報出力  0:出力しない 1:出力する
 #define _OUTPUT_PROGRESS_ 0 // 処理過程ファイル出力 0:出力しない 1:出力する
 #define _RUN_FIRST_ONLY_ 0 // 1度目の移動で終了(デバッグ用)
-#define _SHOW_EACH_ENERGY_ 0 // 各移動時にエネルギー表示
+#define _SHOW_EACH_ENERGY_ 1 // 各移動時にエネルギー表示
 #define _OUTPUT_SUBMODULAR_SUBSETS_ 0
 
 
@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     int errlog = 0;
     int error_count = 0;
     int lamda = 1;
-    double decreace, prev_energy, T = INF;
+    double decreace, prev_energy, before_energy, new_energy, err, T = INF;
     double *f;
     char output_file[100];
     clock_t start;
@@ -282,6 +282,7 @@ int main(int argc, char *argv[]) {
     printf("output_file: %s\n", output_file);
     printf("label_size: %d\n", label_size);
     printf("range_size: %d\n", range_size);
+    printf("lambda: %d\n", lamda);
     printf("T: %.2f\n", T);
     if(theta(2, 2 * 2) > 2) printf("Vpq(fp, fq) = (fp - fq)^2\n");
     else printf("Vpq(fp, fq) = |fp - fq|\n");
@@ -383,6 +384,7 @@ int main(int argc, char *argv[]) {
                 flag = 1;
                 break;
             }
+            before_energy = energy_str(&Ge, label, T, lamda, left.width, I_left, I_right);
             
 #if _OUTPUT_T_
             fprintf(fp, "\n-------------------------------------\n");
@@ -445,11 +447,12 @@ int main(int argc, char *argv[]) {
                 } else newlabel[j] = label[j];
             }
 
-            if (energy_str(&Ge, newlabel, T, lamda, left.width, I_left, I_right) < energy_str(&Ge, label, T, lamda, left.width, I_left, I_right)) {
+            new_energy = energy_str(&Ge, newlabel, T, lamda, left.width, I_left, I_right);
+
+            if (new_energy <= before_energy) {
                 last_move = i;
                 cpyarray(label, newlabel, grids_node);
-
-            } else if (energy_str(&Ge,  newlabel, T, lamda, left.width, I_left, I_right) > energy_str(&Ge, label, T, lamda, left.width, I_left, I_right)) {
+            } else if (new_energy > before_energy) {
                 errlog = 1;
                 
                 printf("err %lf -> %lf\n", energy_str(&Ge,  label, T, lamda, left.width, I_left, I_right), energy_str(&Ge, newlabel, T, lamda, left.width, I_left, I_right));
@@ -547,7 +550,7 @@ int main(int argc, char *argv[]) {
             }
         } else {
             for(i = 1; i <= (output.height) * (output.width); i++) {
-                if ((i - 1) / output.width >= scale && (i - 1) % output.width>=scale &&
+                if ((i - 1) / output.width >= scale && (i - 1) % output.width >= scale &&
                     (i - 1) / output.width <= output.height - scale && (i - 1) % output.width <= output.width - scale) {
                     if (abs(output.data[(i - 1) / output.width][(i - 1) % output.width].r - truth.data[(i - 1) / truth.width][(i - 1) % truth.width].r ) 
                         >= scale + 1) {
@@ -556,9 +559,9 @@ int main(int argc, char *argv[]) {
                 }                            
             }
         }
-        
-        double err = 100 * error_count / (double)(truth.height * truth.width);
-        printf("%lf\n", err);
+
+        err = 100 * error_count / (double)(truth.height * truth.width);
+        printf("Error rate : %lf\n", err);
     }
 
     // free meory
