@@ -1,0 +1,142 @@
+T : 36 候補区間: 0 --> 6
+----------------------------------------------
+input_file: input/tsukuba_
+output_file: output/tsukuba_1_6.bmp
+label_size: 16
+range_size: 5
+lambda: 1
+T: 36.00
+Vpq(fp, fq) = (fp - fq)^2
+height 288, width 384
+Energy (before): 139094
+Energy : 53837
+Energy : 48885
+Energy : 47025
+Energy : 45784
+Energy : 45261
+Energy : 44901
+Energy : 44578
+Energy : 44544
+Energy : 44532
+Energy : 44532
+Energy (after): 44532
+Italation: 880
+Run time[299.28]
+Error rate : 18.046513
+----------------------------------------------
+T : 36 候補区間: 0 --> 6
+----------------------------------------------
+input_file: input/tsukuba_
+output_file: output/tsukuba_2_6.bmp
+label_size: 16
+range_size: 5
+lambda: 2
+T: 36.00
+Vpq(fp, fq) = (fp - fq)^2
+height 288, width 384
+Energy (before): 139094
+Energy : 51177
+Energy : 48144
+Energy : 47767
+Energy : 47719
+Energy : 47448
+Energy : 47442
+Energy : 47442
+Energy (after): 47442
+Italation: 616
+Run time[220.79]
+Error rate : 17.085323
+----------------------------------------------
+T : 36 候補区間: 0 --> 6
+----------------------------------------------
+input_file: input/tsukuba_
+output_file: output/tsukuba_3_6.bmp
+label_size: 16
+range_size: 5
+lambda: 3
+T: 36.00
+Vpq(fp, fq) = (fp - fq)^2
+height 288, width 384
+Energy (before): 139094
+Energy : 51588
+Energy : 50483
+Energy : 50483
+Energy (after): 50483
+Italation: 264
+Run time[97.37]
+Error rate : 18.561921
+----------------------------------------------
+T : 36 候補区間: 0 --> 6
+----------------------------------------------
+input_file: input/tsukuba_
+output_file: output/tsukuba_4_6.bmp
+label_size: 16
+range_size: 5
+lambda: 4
+T: 36.00
+Vpq(fp, fq) = (fp - fq)^2
+height 288, width 384
+Energy (before): 139094
+Energy : 49748
+Energy : 49210
+Energy : 49210
+Energy (after): 49210
+Italation: 264
+Run time[101.60]
+Error rate : 18.334961
+----------------------------------------------
+T : 36 候補区間: 0 --> 6
+----------------------------------------------
+input_file: input/tsukuba_
+output_file: output/tsukuba_5_6.bmp
+label_size: 16
+range_size: 5
+lambda: 5
+T: 36.00
+Vpq(fp, fq) = (fp - fq)^2
+height 288, width 384
+Energy (before): 139094
+Energy : 53631
+Energy : 53621
+Energy : 53621
+Energy (after): 53621
+Italation: 264
+Run time[106.35]
+Error rate : 20.375796
+----------------------------------------------
+T : 36 候補区間: 0 --> 6
+----------------------------------------------
+input_file: input/tsukuba_
+output_file: output/tsukuba_6_6.bmp
+label_size: 16
+range_size: 5
+lambda: 6
+T: 36.00
+Vpq(fp, fq) = (fp - fq)^2
+height 288, width 384
+Energy (before): 139094
+Energy : 57817
+Energy : 57817
+Energy (after): 57817
+Italation: 176
+Run time[72.66]
+Error rate : 20.644350
+----------------------------------------------
+T : 36 候補区間: 0 --> 6
+----------------------------------------------
+input_file: input/tsukuba_
+output_file: output/tsukuba_7_6.bmp
+label_size: 16
+range_size: 5
+lambda: 7
+T: 36.00
+Vpq(fp, fq) = (fp - fq)^2
+height 288, width 384
+Energy (before): 139094
+Energy : 61878
+Energy : 61878
+Energy (after): 61878
+Italation: 176
+Run time[76.01]
+Error rate : 20.714880
+----------------------------------------------
