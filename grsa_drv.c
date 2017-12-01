@@ -2,11 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+// #include <math.h>
 #include "bmp.h"
 #include "grsa.h"
 #include "graph.h"
 #include "ford_fulkerson.h"
-
+#include "malloc.h"
 #include <float.h>
 #define INF DBL_MAX
 
@@ -20,14 +21,51 @@
 #define _OUTPUT_PROGRESS_ 0 // 処理過程ファイル出力 0:出力しない 1:出力する
 #define _RUN_FIRST_ONLY_ 0 // 1度目の移動で終了(デバッグ用)
 #define _SHOW_EACH_ENERGY_ 1 // 各移動時にエネルギー表示
-#define _OUTPUT_SUBMODULAR_SUBSETS_ 0
+#define _OUTPUT_SUBMODULAR_SUBSETS_ 1
 
+
+int pair(int i, int j) {
+    int k = i, res = 0;
+    if(j == 0) return 0;
+    else res = i;
+
+    while (k > i - j) {
+        res += k;
+        k--;
+    }
+    return res;
+}
+void GenAllPairs(int **pairs, int label_size) {
+    int i, j, k;
+    int label_max = label_size - 1;
+    if ((pairs = (int **)malloc(sizeof(int*) * (nc2(label_size) + 1))) == NULL) {
+        fprintf(stderr, "Error!:malloc[main()->pairs]\n");
+        exit(EXIT_FAILURE);
+    }
+    printf("%d\n", nc2(label_size));
+
+    k = 1;
+    for (i = 0; i < label_max; i++) {
+        for (j = i + 1; j <= label_max; j++) {
+            if ((pairs[k] = (int*)malloc(sizeof(int) * 3)) == NULL) {
+                fprintf(stderr, "Error!:malloc[main()->pairs]\n");
+                exit(EXIT_FAILURE);
+            }
+            pairs[k][0] = 0;
+            pairs[k][1] = i;
+            pairs[k][2] = j;
+
+            printf("(%d, %d): %d\n", i, j, k);
+            k++;
+        }
+    }
+}
 
 int main(int argc, char *argv[]) {
-    int i, j, k, l, node, edge, grids_node, flag, size, ccvex, prev;
+    int i, j, k, l, m, n, node, edge, grids_node, flag, size, ccvex, prev;
     int scale, label_max, grids_edge, count, last_move, ci, large_array, total_ss_count;
     int *I_left, *I_right, *t, *label, *newlabel, *label_index;
-    int **ls;
+    int **ls, **pairs, **temp;
     int convex[10][2];
     // I->入力画像の輝度, t->2値変数, label->ラベル付け
     int label_size = 16;
@@ -35,7 +73,7 @@ int main(int argc, char *argv[]) {
     int errlog = 0;
     int error_count = 0;
     int lamda = 1;
-    double decreace, prev_energy, before_energy, new_energy, err, T = INF;
+    double decreace, prev_energy, before_energy, new_energy, err, T_1, T = INF;
     double *f;
     char output_file[100];
     clock_t start;
@@ -46,9 +84,7 @@ int main(int argc, char *argv[]) {
     char imgleft[100];
     char imgright[100];
     char imgtruth[100];
-    
     // スタックサイズ変更
-    system("ulimit -s unlimited");
 
 #if _OUTPUT_INFO_
     double maxflow;
@@ -108,8 +144,9 @@ int main(int argc, char *argv[]) {
 
     T = theta(range_size, INF);
     // T = range_size;
+    // T = theta(6, INF);
+    // range_size = 5;
 
-    
     // ccvex 凸区間の数(count of convex)
     ccvex = 0;
 
@@ -118,11 +155,12 @@ int main(int argc, char *argv[]) {
     // }
     // printf("\n");
 
+
+    // 候補区間抽出
     i = 0;
     j = 1;
     while (j < label_size) {
         j++;
-
         // printf("i: %d, j: %d isc: %f %f\n", i, j, theta(j, T) - theta(j - 1, T) , (theta(j - 1, T) - theta(i, T)) / (j - 1 - i));
         if (j > 1  && is_convex(i, j, T)) {
             prev = 1;
@@ -144,119 +182,49 @@ int main(int argc, char *argv[]) {
             prev = 0;
         }
         if (ccvex > 9) break;
-        
+
     }
     for (i = 0; i < ccvex; i++) {
         printf("T : %.0lf 候補区間: %d --> %d\n", T, convex[i][0], convex[i][1]);
     }
 
-    // exit(EXIT_SUCCESS);
-    // generate submodular subsets
-    // ls[i][0] == 劣モジュラ部分集合iの要素数
-    // ls[i][1] ~ ls[i][range_size] 劣モジュラ部分集合
+    // 全てのラベルのペアを列挙
+    if ((pairs = (int **)malloc(sizeof(int*) * (nc2(label_size) + 1))) == NULL) {
+        fprintf(stderr, "Error!:malloc[main()->pairs]\n");
+        exit(EXIT_FAILURE);
+    }
 
-    // total_ss_count = gen_submodular_subsets(label_size, range_size, ls);
-    if (label_size != range_size) {
-        large_array = 0;
-        if (range_size > 2) {
-            i = 0;
-            do {
-                i += range_size - 1;
-                large_array++;
-            } while (i + range_size < label_size);
-            large_array++;
-            size = label_max - i + 1;
-            total_ss_count = large_array + nc2(label_size) - (large_array - 1) * nc2(range_size) - nc2(size);
-        } else total_ss_count = nc2(label_size);
-
-        // printf("size : %d large_array %d\n", size, large_array);
-        if ((ls = (int **)malloc(sizeof(int*) * (total_ss_count + 1))) == NULL) {
-            fprintf(stderr, "Error!:malloc[main()->ls]\n");
-            exit(EXIT_FAILURE);
-        }
-
-        if (range_size > 2) {
-            for (i = 1; i < large_array; i++) {
-                if ((ls[i] = (int *)malloc(sizeof(int) * (range_size + 1))) == NULL) {
-                    fprintf(stderr, "Error!:malloc[main()->ls]\n");
-                    exit(EXIT_FAILURE);
-                }
-                ls[i][0] = range_size;
-                if(i != 1) ls[i][1] = ls[i - 1][range_size];
-                else ls[i][1] = 0;
-
-                for (j = 2; j <= range_size; j++) {
-                    ls[i][j] = ls[i][j - 1] + 1;
-                    k = ls[i][j];
-                }
-            }
-        
-            if ((ls[large_array] = (int *)malloc(sizeof(int) * size)) == NULL) {
-                fprintf(stderr, "Error!:malloc[main()->ls]\n");
+    k = 1;
+    for (i = 0; i < label_max; i++) {
+        for (j = i + 1; j <= label_max; j++) {
+            if ((pairs[k] = (int*)malloc(sizeof(int) * 3)) == NULL) {
+                fprintf(stderr, "Error!:malloc[main()-=>pairs]\n");
                 exit(EXIT_FAILURE);
             }
-            
-            ls[large_array][0] = size;
-            ls[large_array][1] = k;
-
-            for (j = 2; ls[large_array][j - 1] + 1 <= label_max; j++) {
-                    ls[large_array][j] = ls[large_array][j - 1] + 1;
-            }
-
-            for (i = large_array + 1; i <= total_ss_count; i++) {
-                if ((ls[i] = (int *)malloc(sizeof(int) * (3))) == NULL) {
-                    fprintf(stderr, "Error!:malloc[main()->ls]\n");
-                    exit(EXIT_FAILURE);
-                }
-                ls[i][0] = 2;
-            }
-            i = 0;
-            j = range_size;
-            k = large_array + 1;
-            l = range_size - 1;
-            while(i < label_max - (ls[large_array][0] - 1)) {
-                ls[k][1] = i;
-                ls[k][2] = j;
-                // printf("%d %d \n", ls[k][1], ls[k][2]);
-                k++;
-                if (j == label_max) {
-                    i++;
-                    j = l + 1;
-                    if (i == l - 1) l += range_size - 1;
-                }
-                else j++;
-            }
-        } else {
-
-            for (i = 1; i <= total_ss_count; i++) {
-                if ((ls[i] = (int *)malloc(sizeof(int) * (3))) == NULL) {
-                    fprintf(stderr, "Error!:malloc[main()->ls]\n");
-                    exit(EXIT_FAILURE);
-                }
-                ls[i][0] = 2;
-            }
-
-            i = 0;
-            j = 1;
-            k = large_array + 1;
-            while(i < label_max) {
-                ls[k][1] = i;
-                ls[k][2] = j;
-                // printf("%d %d \n", ls[k][1], ls[k][2]);
-                k++;
-                if (j == label_max) {
-                    i++;
-                    j = i + 1;
-                }
-                else j++;
-            }
+            pairs[k][0] = 0;
+            pairs[k][1] = i;
+            pairs[k][2] = j;
+            k++;
         }
-    } else {
+    }
+    for (i = 1; i <= nc2(label_size); i++) {
+        printf("(%d, %d)\n", pairs[i][1], pairs[i][2]);
+    }
+
+    if ((ls = (int **)malloc(sizeof(int*) * (nc2(label_size) + 1))) == NULL) {
+        fprintf(stderr, "Error!:malloc[main()->ls]\n");
+        exit(EXIT_FAILURE);
+    }
+
+    total_ss_count = 0;
+    if(label_size == range_size) {
         large_array = 1;
         total_ss_count = 1;
-        if ((ls = (int **)malloc(sizeof(int*) * (total_ss_count + 1))) == NULL) {
+        if ((temp = (int **)realloc(ls, 2 * sizeof(int *))) == NULL) {
             fprintf(stderr, "Error!:malloc[main()->ls]\n");
             exit(EXIT_FAILURE);
+        } else {
+            ls = temp;
         }
 
         if ((ls[1] = (int *)malloc(sizeof(int) * (range_size + 1))) == NULL) {
@@ -265,8 +233,122 @@ int main(int argc, char *argv[]) {
         }
         ls[1][0] = range_size;
         for (i = 1; i <= range_size; i++) ls[1][i] = i - 1;
+        total_ss_count = 1;
+    } else if (range_size == 2) {
+        ls = pairs;
+        for (i = 1; i <= nc2(label_size); i++) ls[i][0] = 2;
+        total_ss_count = nc2(label_size);
+
+    } else {
+        printf("ccvex: %d\n", ccvex);
+        for (i = 1; i <= ccvex; i++) {
+            if (convex[i][0] == 0) {
+
+                large_array = 0;
+                j = 0;
+                do {
+                    j += range_size - 1;
+                    large_array++;
+                } while (j + range_size < convex[i][1]);
+                large_array++;
+                size = label_max - i + 1;
+
+                for (j = 1; j < large_array; j++) {
+                    printf("j: %d\n", j);
+                    if ((ls[j] = (int *)malloc(sizeof(int) * (range_size + 1))) == NULL) {
+                        fprintf(stderr, "Error!:malloc[main()->ls]\n");
+                        exit(EXIT_FAILURE);
+                    }
+                    ls[j][0] = range_size;
+                    if(j != 1) ls[j][1] = ls[j - 1][range_size];
+                    else ls[j][1] = 0;
+
+                    for (k = 2; k <= range_size; k++) {
+                        //segmentation fault
+                        // printf("%d, %d\n", j, k);
+                        ls[j][k] = ls[j][k - 1] + 1;
+                        l = ls[j][k];
+                    }
+                    // printf("meu\n");
+                    for (k = 1; k < ls[j][0]; k++) {
+                        for (l = k + 1; l <= ls[j][0]; l++) {
+                            m = pair(ls[j][0], k) + l - k - 1;
+                            //ifいらないはず
+                            //seg
+                            printf("m: %d\n", m);
+                            if (pairs[m][1] == k && pairs[m][2] == l) {
+                                pairs[m][1] = 1;
+                            }
+                        }
+                    }
+                }
+                if ((ls[large_array] = (int *)malloc(sizeof(int) * size)) == NULL) {
+                    fprintf(stderr, "Error!:malloc[main()->ls]\n");
+                    exit(EXIT_FAILURE);
+                }
+
+                ls[large_array][0] = size;
+                ls[large_array][1] = l;
+
+                for (j = 2; ls[large_array][j - 1] + 1 <= label_max; j++) {
+                        ls[large_array][j] = ls[large_array][j - 1] + 1;
+                }
+            } else {
+                n = convex[i][1] / convex[i][0];
+                for (j = 0; j < convex[i][0]; j++) {
+                    if (j + n * convex[i][0] <= label_max) large_array++;
+                }
+
+                for (j = 1; j < large_array; j++) {
+                    if ((ls[total_ss_count + j] = (int *)malloc(sizeof(int) * (n + 1))) == NULL) {
+                        fprintf(stderr, "Error!:malloc[main()->ls]\n");
+                        exit(EXIT_FAILURE);
+                    }
+                    ls[total_ss_count + j][0] = n + 1;
+                    ls[total_ss_count + j][1] = j;
+
+                    for (k = 1; k <= n; j++) {
+                        ls[j][k] = ls[j][k - 1] + convex[i][0];
+                    }
+                    for (k = 1; k < ls[j][0]; k++) {
+                        for (l = k + 1; l <= ls[j][0]; l++) {
+                            m = pair(ls[j][0], k) + l - k - 1;
+                            //ifいらないはず
+                            if (pairs[m][1] == k && pairs[m][2] == l) {
+                                pairs[m][1] = 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        printf("total_ss_count: %d\n", total_ss_count);
+        size = total_ss_count + 1;
+        for (i = 1; i <= nc2(label_size); i++) {
+            if (pairs[i][0] == 0) {
+                if ((ls[size] = (int *)malloc(sizeof(int) * (3))) == NULL) {
+                    fprintf(stderr, "Error!:malloc[main()->ls]\n");
+                    exit(EXIT_FAILURE);
+                }
+                ls[size][0] = 2;
+                ls[size][1] = pairs[i][1];
+                ls[size][2] = pairs[i][2];
+                size++;
+            }
+        }
+        total_ss_count += size;
+        if ((temp = (int **)realloc(ls, total_ss_count * sizeof(int *))) == NULL) {
+            fprintf(stderr, "Error!:malloc[main()->ls]\n");
+            exit(EXIT_FAILURE);
+        } else {
+            ls = temp;
+        }
+        total_ss_count--;
     }
 
+
+
+    printf("total_ss_count = %d\n", total_ss_count);
 #if _OUTPUT_SUBMODULAR_SUBSETS_
     for (i = 1; i <= total_ss_count; i++) {
         for (j = 1; j <= ls[i][0]; j++) {
@@ -276,7 +358,10 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-   
+    exit(EXIT_SUCCESS);
+
+
+
     printf("----------------------------------------------\n");
     printf("input_file: %s\n", argv[1]);
     printf("output_file: %s\n", output_file);
@@ -343,8 +428,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "main(): ERROR [label_index = malloc()]\n");
         return (EXIT_FAILURE);
     }
-    
-    
+
+
     // 輝度から初期ラベル設定
     for (i = 1; i <= grids_node ; i++) label[i] = 0;
     cpyarray(newlabel, label, grids_node);
@@ -385,7 +470,7 @@ int main(int argc, char *argv[]) {
                 break;
             }
             before_energy = energy_str(&Ge, label, T, lamda, left.width, I_left, I_right);
-            
+
 #if _OUTPUT_T_
             fprintf(fp, "\n-------------------------------------\n");
             fprintf(fp, "submodular subsets: ");
@@ -393,33 +478,33 @@ int main(int argc, char *argv[]) {
                 fprintf(fp, "%d ", ls[i][j]);
             }
             fprintf(fp, "\n");
-            
+
             for (j = 1; j <= Ge.n - 2; j++) {
                 // printf("t[%d] : %d\n", i, t[i]);
                 fprintf(fp, "%d ", isin_array(ls[i], label[j]) ? 1 : 0);
                 if(j % left.width == 0) fprintf(fp, "\n");
                 if(j % (grids_node) == 0) fprintf(fp, "-------------------------------------\n");
             }
-            
+
             fprintf(fp, "label: \n");
             for (j = 1; j <= Ge.n - 2; j++) {
                 // printf("t[%d] : %d\n", i, t[i]);
                 fprintf(fp, "%d ", label[j]);
                 if(j % left.width == 0) fprintf(fp, "\n");
                 if(j % (grids_node) == 0) fprintf(fp, "-------------------------------------\n");
-            }      
+            }
 #endif
-         
-            
+
+
             node = left.height * left.width * ls[i][0] + 2;
             grids_edge = (left.height - 1) * left.width + left.height * (left.width - 1);
-            edge = 2 * grids_node * ls[i][0] + 2 * grids_edge * (ls[i][0] - 1) * ((ls[i][0] - 1)); 
+            edge = 2 * grids_node * ls[i][0] + 2 * grids_edge * (ls[i][0] - 1) * ((ls[i][0] - 1));
 
             newGraph(&G, node, edge);
             set_edge_str(&G, left.height, left.width, ls[i], label, T, lamda, I_left, I_right);
             // set_edge(&G, left.height, left.width, ls[i], label, I_left, T, lamda);
             initAdjList(&G);
-            
+
             if ((f = (double *) malloc(sizeof(double) * (G.m + 1))) == NULL) {
                 fprintf(stderr, "main(): ERROR [f = malloc()]\n");
                 return (EXIT_FAILURE);
@@ -428,12 +513,12 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "main(): ERROR [t = malloc()]\n");
                 return (EXIT_FAILURE);
             }
-            
+
             for (j = 0; j < G.m + 1 ; j++) f[j] = 0;
             for (j = 0; j < G.n + 1 ; j++) t[j] = 0;
             boykov_kolmogorov(G, f, t);
             ci++;
-            
+
             for (j = 1; j <= Ge.n - 2; j++) {
                 if (isin_array(ls[i], label[j])) {
                     k = j;
@@ -454,7 +539,7 @@ int main(int argc, char *argv[]) {
                 cpyarray(label, newlabel, grids_node);
             } else if (new_energy > before_energy) {
                 errlog = 1;
-                
+
                 printf("err %lf -> %lf\n", energy_str(&Ge,  label, T, lamda, left.width, I_left, I_right), energy_str(&Ge, newlabel, T, lamda, left.width, I_left, I_right));
                 for (j = 1; j <= ls[i][0]; j++) printf("%d ", ls[i][j]);
                 printf("\n");
@@ -505,7 +590,7 @@ int main(int argc, char *argv[]) {
         printf("Energy : %.0lf\n", energy_str(&Ge, label, T, lamda, left.width, I_left, I_right));
 #endif
     } while (decreace > 0);
-    
+
 #if _OUTPUT_T_
     fprintf(fp, "result:\n");
     for (i = 1; i <= Ge.n - 2; i++) {
@@ -517,8 +602,8 @@ int main(int argc, char *argv[]) {
     printf("Energy (after): %.0lf\n", energy_str(&Ge, label, T, lamda, left.width, I_left, I_right));
     printf("Italation: %d\n", ci);
     printf("Run time[%.2lf]\n", (double) (clock() - start) / CLOCKS_PER_SEC);
-    
-    
+
+
     // output to bitmap file
     for (i = 0; i <  left.height; i++) {
         for (j = 0; j < left.width; j++) {
@@ -528,35 +613,35 @@ int main(int argc, char *argv[]) {
         }
     }
     WriteBmp(output_file, &output);
-    
+
 #if _OUTPUT_T_
     fprintf(fp, "Energy (after): %lf\n", energy_str(&Ge, label, T, lamda, left.width, I_left, I_right));
     fclose(fp);
 #endif
 
     if(errlog) printf("エネルギーが増大する移動が確認されました\n");
-    
+
     if (strcmp(output_file, "/dev/null") != 0){
         ReadBmp(output_file, &output);
         // Gray(&truth, &truth);
         Gray(&output, &output);
 
         if (truth.data[0][0].r) {
-            for(i = 1; i <= (output.height) * (output.width); i++) {   
-                if (abs(output.data[(i - 1) / output.width][(i - 1) % output.width].r - truth.data[(i - 1) / truth.width][(i - 1) % truth.width].r ) 
+            for(i = 1; i <= (output.height) * (output.width); i++) {
+                if (abs(output.data[(i - 1) / output.width][(i - 1) % output.width].r - truth.data[(i - 1) / truth.width][(i - 1) % truth.width].r )
                     >= scale + 1) {
                     error_count++;
-                }                            
+                }
             }
         } else {
             for(i = 1; i <= (output.height) * (output.width); i++) {
                 if ((i - 1) / output.width >= scale && (i - 1) % output.width >= scale &&
                     (i - 1) / output.width <= output.height - scale && (i - 1) % output.width <= output.width - scale) {
-                    if (abs(output.data[(i - 1) / output.width][(i - 1) % output.width].r - truth.data[(i - 1) / truth.width][(i - 1) % truth.width].r ) 
+                    if (abs(output.data[(i - 1) / output.width][(i - 1) % output.width].r - truth.data[(i - 1) / truth.width][(i - 1) % truth.width].r )
                         >= scale + 1) {
                         error_count++;
                     }
-                }                            
+                }
             }
         }
 
@@ -570,7 +655,10 @@ int main(int argc, char *argv[]) {
         free(ls[i]);
     }
     free(ls);
-
+    for (i = 0; i <= nc2(label_size) + 1; i++) {
+        free(pairs[i]);
+    }
+    free(pairs);
     free(I_left);
     free(I_right);
     free(label);
@@ -578,5 +666,5 @@ int main(int argc, char *argv[]) {
     free(label_index);
     printf("----------------------------------------------\n");
     return 0;
-    
+
 }

@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <float.h>
-#include <math.h>
+// #include <math.h>
 
 #define INF DBL_MAX
 
@@ -12,6 +12,9 @@ double dabs(double a, double b) {
     return a - b > 0 ? a - b : b - a;
 }
 
+double abss(double a) {
+    return a > 0 ? a : - a;
+}
 int nc2(int n) {
     return n * (n - 1) / 2;
 }
@@ -24,6 +27,7 @@ double fmax(double i, double j) {
     return i > j ? i : j;
 }
 double theta(double n, double T) {
+    T = INF;
 
     if(!function) return fmin(n > 0 ? n : -n, T);
     else return fmin(n * n, T);
@@ -217,11 +221,12 @@ double data_str(int i, int label, int width, int *I_left, int *I_right) {
     // return 1.0 * dabs(label, I_left[i]);
     //leftの中のものがどこにあるか
     if ((i - 1) / width == (i - label - 1) / width) {
-        data = (I_left[i] - I_right[i - label]) * (I_left[i] - I_right[i - label]);
+        // data = (I_left[i] - I_right[i - label]) * (I_left[i] - I_right[i - label]);
+        data = (I_left[i] - I_right[i - label]);
     }else data = INF;
     
-
-    return sqrt(data);
+    return abss(data);
+    // return sqrt(data);
     
 }
 
@@ -554,7 +559,7 @@ void set_edge(Graph *G, int height, int width, int *ls, int *label, int *I, doub
     current_edge = depth_begin;
     for (i = 1; i <= grids_node; i++) {
         for (j = 1; j < ls[0]; j++) {
-            G->capa[current_edge] -=min[i];
+            G->capa[current_edge] -= min[i];
             current_edge++;
         }
     }
