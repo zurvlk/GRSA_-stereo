@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #define MyMalloc(S) MyMalloc_Rep( (S), __FILE__, __LINE__ )
 #define MyFree(P) MyFree_Rep( (P), __FILE__, __LINE__ )
 

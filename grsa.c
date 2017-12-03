@@ -27,11 +27,11 @@ double fmax(double i, double j) {
     return i > j ? i : j;
 }
 double theta(double n, double T) {
-    T = INF;
+    T = 5;
 
-    if(!function) return fmin(n > 0 ? n : -n, T);
-    else return fmin(n * n, T);
-    // return fmin(n >= 0 ? n : -n, fmax(n >= 0 ? n - 5 : -n - 5, T));
+    // if(!function) return fmin(n > 0 ? n : -n, T);
+    // else return fmin(n * n, T);
+    return fmin(n >= 0 ? n : -n, fmax(n >= 0 ? n - 5 : -n - 5, T));
 
 }
 
@@ -46,7 +46,7 @@ int isin_array(int *ls, int target) {
 
 int is_convex(int i, int j, double T) {
     if (theta(j, T) - theta(j - 1, T) >= (theta(j - 1, T) - theta(i, T)) / (j - 1 - i) &&
-        i * (theta(i + 1, T) - theta(i, T)) >= theta(i, T) - theta(0, T) && 
+        i * (theta(i + 1, T) - theta(i, T)) >= theta(i, T) - theta(0, T) &&
         theta(i, T) - theta(0, T) >= 0) {
             return 1;
         }
@@ -90,11 +90,11 @@ int gen_submodular_subsets(int label_size, int range_size, int **ls) {
             size = label_max - i + 1;
             total_ss_count = large_array + nc2(label_size) - (large_array - 1) * nc2(range_size) - nc2(size);
         } else total_ss_count = nc2(label_size);
-        
-        
+
+
         // large_array = label_size / (range_size - 1) - 1;
-        
-        
+
+
         printf("size : %d large_array %d\n", size, large_array);
         if ((ls = (int **)malloc(sizeof(int*) * (total_ss_count + 1))) == NULL) {
             fprintf(stderr, "Error!:malloc[main()->ls]\n");
@@ -119,7 +119,7 @@ int gen_submodular_subsets(int label_size, int range_size, int **ls) {
                 }
                 // printf("\n");
             }
-        
+
             if ((ls[large_array] = (int *)malloc(sizeof(int) * size)) == NULL) {
                 fprintf(stderr, "Error!:malloc[main()->ls]\n");
                 exit(EXIT_FAILURE);
@@ -224,10 +224,10 @@ double data_str(int i, int label, int width, int *I_left, int *I_right) {
         // data = (I_left[i] - I_right[i - label]) * (I_left[i] - I_right[i - label]);
         data = (I_left[i] - I_right[i - label]);
     }else data = INF;
-    
+
     return abss(data);
     // return sqrt(data);
-    
+
 }
 
 double energy(Graph *G, int *label, int *I, double T, int lamda) {
@@ -275,7 +275,7 @@ void set_single_edges(Graph *G, int height, int width) {
     sink = source + 1;
     setSource(G, source);
     setSink(G, sink);
-    
+
     edge_count = 1;
     //点と点の間の枝（横）
     for (i = 1; i < height + 1; i++) {
@@ -286,7 +286,7 @@ void set_single_edges(Graph *G, int height, int width) {
             edge_count++;
         }
     }
- 
+
     //点と点の間の枝（縦）
     for (i = 1; i < height ; i++){
         for (j = 1; j < width + 1; j++) {
@@ -296,13 +296,13 @@ void set_single_edges(Graph *G, int height, int width) {
             edge_count++;
         }
     }
- 
+
     //sourceと点の間の枝
     for (i = 1; i < height * width + 1; i++){
        setEdge(G, edge_count, G->src, i, 0);
        edge_count++;
     }
-    
+
     //点とsinkの間の枝
     for (i = 1; i < height * width + 1; i++){
        setEdge(G, edge_count, i, G->sink, 0);
@@ -352,7 +352,7 @@ int nnp_4_grsa(int i, int j, int height, int width, int *ls, int *label, double 
             nnp_total += pairwise(ls[j], label[i - width], T, lamda) ;
         }
     }
-    
+
     if (i <= grids_node - width) {
         // 画素が一番下の行に存在しないとき(iの下が空白でないとき)
         if (!isin_array(ls, label[i + width])){
@@ -415,7 +415,7 @@ void set_edge(Graph *G, int height, int width, int *ls, int *label, int *I, doub
         if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
         edge_count++;
     }
-    
+
     // depth
     depth_begin = edge_count;
     for (i = 1; i <= grids_node; i++) {
@@ -463,7 +463,7 @@ void set_edge(Graph *G, int height, int width, int *ls, int *label, int *I, doub
         }
     }
 
-    
+
 
     // new codes
     // horizonal
@@ -485,7 +485,7 @@ void set_edge(Graph *G, int height, int width, int *ls, int *label, int *I, doub
             }
         }
     }
-    
+
     // vertical
     for (i = 1; i < height ; i++){
         for (j = 1; j < width + 1; j++) {
@@ -565,7 +565,7 @@ void set_edge(Graph *G, int height, int width, int *ls, int *label, int *I, doub
     }
 
     free(min);
-    
+
     // printf("total edge : %d\n", edge_count - 1);
     return;
 }
@@ -605,7 +605,7 @@ void set_edge_str(Graph *G, int height, int width, int *ls, int *label, double T
         if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
         edge_count++;
     }
-    
+
     // depth
     depth_begin = edge_count;
     for (i = 1; i <= grids_node; i++) {
@@ -676,7 +676,7 @@ void set_edge_str(Graph *G, int height, int width, int *ls, int *label, double T
             }
         }
     }
-    
+
     // vertical
     for (i = 1; i < height ; i++){
         for (j = 1; j < width + 1; j++) {
@@ -755,7 +755,7 @@ void set_edge_str(Graph *G, int height, int width, int *ls, int *label, double T
     }
 
     free(min);
-    
+
     // printf("total edge : %d\n", edge_count - 1);
     return;
 }

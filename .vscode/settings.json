@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "bmp.h": "c",
-        "grsa.h": "c"
+        "grsa.h": "c",
+        "math.h": "c"
     }
 }

@@ -23,54 +23,6 @@
                   {
                     "isGenerated": true,
                     "sources": [
-                      "build/CMakeFiles/NightlyStart",
-                      "build/CMakeFiles/NightlyStart.rule"
-                    ]
-                  }
-                ],
-                "fullName": "NightlyStart",
-                "name": "NightlyStart",
-                "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
-                "type": "UTILITY"
-              },
-              {
-                "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
-                "fileGroups": [
-                  {
-                    "isGenerated": true,
-                    "sources": [
-                      "build/CMakeFiles/NightlyMemoryCheck",
-                      "build/CMakeFiles/NightlyMemoryCheck.rule"
-                    ]
-                  }
-                ],
-                "fullName": "NightlyMemoryCheck",
-                "name": "NightlyMemoryCheck",
-                "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
-                "type": "UTILITY"
-              },
-              {
-                "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
-                "fileGroups": [
-                  {
-                    "isGenerated": true,
-                    "sources": [
-                      "build/CMakeFiles/NightlyBuild",
-                      "build/CMakeFiles/NightlyBuild.rule"
-                    ]
-                  }
-                ],
-                "fullName": "NightlyBuild",
-                "name": "NightlyBuild",
-                "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
-                "type": "UTILITY"
-              },
-              {
-                "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
-                "fileGroups": [
-                  {
-                    "isGenerated": true,
-                    "sources": [
                       "build/CMakeFiles/ExperimentalUpdate",
                       "build/CMakeFiles/ExperimentalUpdate.rule"
                     ]
@@ -87,13 +39,77 @@
                   {
                     "isGenerated": true,
                     "sources": [
-                      "build/CMakeFiles/ContinuousMemCheck",
-                      "build/CMakeFiles/ContinuousMemCheck.rule"
+                      "build/CMakeFiles/ContinuousBuild",
+                      "build/CMakeFiles/ContinuousBuild.rule"
                     ]
                   }
                 ],
-                "fullName": "ContinuousMemCheck",
-                "name": "ContinuousMemCheck",
+                "fullName": "ContinuousBuild",
+                "name": "ContinuousBuild",
+                "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
+                "type": "UTILITY"
+              },
+              {
+                "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
+                "fileGroups": [
+                  {
+                    "isGenerated": true,
+                    "sources": [
+                      "build/CMakeFiles/Continuous",
+                      "build/CMakeFiles/Continuous.rule"
+                    ]
+                  }
+                ],
+                "fullName": "Continuous",
+                "name": "Continuous",
+                "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
+                "type": "UTILITY"
+              },
+              {
+                "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
+                "fileGroups": [
+                  {
+                    "isGenerated": true,
+                    "sources": [
+                      "build/CMakeFiles/Experimental",
+                      "build/CMakeFiles/Experimental.rule"
+                    ]
+                  }
+                ],
+                "fullName": "Experimental",
+                "name": "Experimental",
+                "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
+                "type": "UTILITY"
+              },
+              {
+                "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
+                "fileGroups": [
+                  {
+                    "isGenerated": true,
+                    "sources": [
+                      "build/CMakeFiles/ExperimentalConfigure",
+                      "build/CMakeFiles/ExperimentalConfigure.rule"
+                    ]
+                  }
+                ],
+                "fullName": "ExperimentalConfigure",
+                "name": "ExperimentalConfigure",
+                "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
+                "type": "UTILITY"
+              },
+              {
+                "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
+                "fileGroups": [
+                  {
+                    "isGenerated": true,
+                    "sources": [
+                      "build/CMakeFiles/NightlyTest",
+                      "build/CMakeFiles/NightlyTest.rule"
+                    ]
+                  }
+                ],
+                "fullName": "NightlyTest",
+                "name": "NightlyTest",
                 "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
                 "type": "UTILITY"
               },
@@ -178,41 +194,18 @@
                 "type": "UTILITY"
               },
               {
-                "artifacts": [
-                  "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build/grsa_str"
-                ],
-                "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
-                "fileGroups": [
-                  {
-                    "compileFlags": "-g  ",
-                    "isGenerated": false,
-                    "language": "CXX",
-                    "sources": [
-                      "main.cpp"
-                    ]
-                  }
-                ],
-                "fullName": "grsa_str",
-                "linkFlags": "-rdynamic",
-                "linkLanguageFlags": "-g",
-                "linkerLanguage": "CXX",
-                "name": "grsa_str",
-                "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
-                "type": "EXECUTABLE"
-              },
-              {
                 "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
                 "fileGroups": [
                   {
                     "isGenerated": true,
                     "sources": [
-                      "build/CMakeFiles/ContinuousSubmit",
-                      "build/CMakeFiles/ContinuousSubmit.rule"
+                      "build/CMakeFiles/NightlyStart",
+                      "build/CMakeFiles/NightlyStart.rule"
                     ]
                   }
                 ],
-                "fullName": "ContinuousSubmit",
-                "name": "ContinuousSubmit",
+                "fullName": "NightlyStart",
+                "name": "NightlyStart",
                 "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
                 "type": "UTILITY"
               },
@@ -222,13 +215,13 @@
                   {
                     "isGenerated": true,
                     "sources": [
-                      "build/CMakeFiles/ContinuousBuild",
-                      "build/CMakeFiles/ContinuousBuild.rule"
+                      "build/CMakeFiles/NightlyMemoryCheck",
+                      "build/CMakeFiles/NightlyMemoryCheck.rule"
                     ]
                   }
                 ],
-                "fullName": "ContinuousBuild",
-                "name": "ContinuousBuild",
+                "fullName": "NightlyMemoryCheck",
+                "name": "NightlyMemoryCheck",
                 "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
                 "type": "UTILITY"
               },
@@ -238,61 +231,13 @@
                   {
                     "isGenerated": true,
                     "sources": [
-                      "build/CMakeFiles/Continuous",
-                      "build/CMakeFiles/Continuous.rule"
+                      "build/CMakeFiles/NightlyBuild",
+                      "build/CMakeFiles/NightlyBuild.rule"
                     ]
                   }
                 ],
-                "fullName": "Continuous",
-                "name": "Continuous",
-                "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
-                "type": "UTILITY"
-              },
-              {
-                "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
-                "fileGroups": [
-                  {
-                    "isGenerated": true,
-                    "sources": [
-                      "build/CMakeFiles/Experimental",
-                      "build/CMakeFiles/Experimental.rule"
-                    ]
-                  }
-                ],
-                "fullName": "Experimental",
-                "name": "Experimental",
-                "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
-                "type": "UTILITY"
-              },
-              {
-                "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
-                "fileGroups": [
-                  {
-                    "isGenerated": true,
-                    "sources": [
-                      "build/CMakeFiles/ExperimentalConfigure",
-                      "build/CMakeFiles/ExperimentalConfigure.rule"
-                    ]
-                  }
-                ],
-                "fullName": "ExperimentalConfigure",
-                "name": "ExperimentalConfigure",
-                "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
-                "type": "UTILITY"
-              },
-              {
-                "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
-                "fileGroups": [
-                  {
-                    "isGenerated": true,
-                    "sources": [
-                      "build/CMakeFiles/NightlyTest",
-                      "build/CMakeFiles/NightlyTest.rule"
-                    ]
-                  }
-                ],
-                "fullName": "NightlyTest",
-                "name": "NightlyTest",
+                "fullName": "NightlyBuild",
+                "name": "NightlyBuild",
                 "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
                 "type": "UTILITY"
               },
@@ -441,6 +386,61 @@
                 "type": "UTILITY"
               },
               {
+                "artifacts": [
+                  "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build/grsa_str"
+                ],
+                "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
+                "fileGroups": [
+                  {
+                    "compileFlags": "-g  ",
+                    "isGenerated": false,
+                    "language": "CXX",
+                    "sources": [
+                      "main.cpp"
+                    ]
+                  }
+                ],
+                "fullName": "grsa_str",
+                "linkFlags": "-rdynamic",
+                "linkLanguageFlags": "-g",
+                "linkerLanguage": "CXX",
+                "name": "grsa_str",
+                "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
+                "type": "EXECUTABLE"
+              },
+              {
+                "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
+                "fileGroups": [
+                  {
+                    "isGenerated": true,
+                    "sources": [
+                      "build/CMakeFiles/ContinuousSubmit",
+                      "build/CMakeFiles/ContinuousSubmit.rule"
+                    ]
+                  }
+                ],
+                "fullName": "ContinuousSubmit",
+                "name": "ContinuousSubmit",
+                "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
+                "type": "UTILITY"
+              },
+              {
+                "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
+                "fileGroups": [
+                  {
+                    "isGenerated": true,
+                    "sources": [
+                      "build/CMakeFiles/ContinuousMemCheck",
+                      "build/CMakeFiles/ContinuousMemCheck.rule"
+                    ]
+                  }
+                ],
+                "fullName": "ContinuousMemCheck",
+                "name": "ContinuousMemCheck",
+                "sourceDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str",
+                "type": "UTILITY"
+              },
+              {
                 "buildDirectory": "/home/zhuravlik/Dropbox/Univ/B4_prog/grsa_str/build",
                 "fileGroups": [
                   {
@@ -493,7 +493,7 @@
         ]
       }
     ],
-    "cookie": "0.1927090183983733",
+    "cookie": "0.30174429918103285",
     "inReplyTo": "codemodel",
     "type": "reply"
   }

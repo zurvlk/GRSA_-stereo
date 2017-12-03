@@ -21,20 +21,28 @@
 #define _OUTPUT_PROGRESS_ 0 // 処理過程ファイル出力 0:出力しない 1:出力する
 #define _RUN_FIRST_ONLY_ 0 // 1度目の移動で終了(デバッグ用)
 #define _SHOW_EACH_ENERGY_ 1 // 各移動時にエネルギー表示
-#define _OUTPUT_SUBMODULAR_SUBSETS_ 1
+#define _OUTPUT_SUBMODULAR_SUBSETS_ 0
 
 
-int pair(int i, int j) {
-    int k = i, res = 0;
-    if(j == 0) return 0;
-    else res = i;
-
-    while (k > i - j) {
-        res += k;
-        k--;
+int pair(int i, int j, int label_size) {
+    int res = 0, c;
+    int temp = i;
+    if (i > j) {
+        i = j;
+        j = temp;
     }
+
+    if(i == 0) return j;
+    c = 0;
+    while (c < i) {
+        res += label_size - c;
+        c++;
+    }
+    // printf("res: %d j: %d\n", res, j);
+    res += j - 2 * c;
     return res;
 }
+
 void GenAllPairs(int **pairs, int label_size) {
     int i, j, k;
     int label_max = label_size - 1;
@@ -62,7 +70,7 @@ void GenAllPairs(int **pairs, int label_size) {
 }
 
 int main(int argc, char *argv[]) {
-    int i, j, k, l, m, n, node, edge, grids_node, flag, size, ccvex, prev;
+    int i, j, k, l, m, n, current_array, node, edge, grids_node, flag, size, ccvex, prev;
     int scale, label_max, grids_edge, count, last_move, ci, large_array, total_ss_count;
     int *I_left, *I_right, *t, *label, *newlabel, *label_index;
     int **ls, **pairs, **temp;
@@ -73,7 +81,7 @@ int main(int argc, char *argv[]) {
     int errlog = 0;
     int error_count = 0;
     int lamda = 1;
-    double decreace, prev_energy, before_energy, new_energy, err, T_1, T = INF;
+    double decreace, prev_energy, before_energy, new_energy, err,  T = INF;
     double *f;
     char output_file[100];
     clock_t start;
@@ -143,17 +151,9 @@ int main(int argc, char *argv[]) {
     strcat(imgtruth, "truth.bmp");
 
     T = theta(range_size, INF);
-    // T = range_size;
-    // T = theta(6, INF);
-    // range_size = 5;
 
     // ccvex 凸区間の数(count of convex)
     ccvex = 0;
-
-    // for (i = 0; i < label_size; i++) {
-    //     printf("%lf ", theta(i ,T));
-    // }
-    // printf("\n");
 
 
     // 候補区間抽出
@@ -208,7 +208,7 @@ int main(int argc, char *argv[]) {
         }
     }
     for (i = 1; i <= nc2(label_size); i++) {
-        printf("(%d, %d)\n", pairs[i][1], pairs[i][2]);
+        // printf("(%d, %d)\n", pairs[i][1], pairs[i][2]);
     }
 
     if ((ls = (int **)malloc(sizeof(int*) * (nc2(label_size) + 1))) == NULL) {
@@ -240,8 +240,7 @@ int main(int argc, char *argv[]) {
         total_ss_count = nc2(label_size);
 
     } else {
-        printf("ccvex: %d\n", ccvex);
-        for (i = 1; i <= ccvex; i++) {
+        for (i = 0; i < ccvex; i++) {
             if (convex[i][0] == 0) {
 
                 large_array = 0;
@@ -249,35 +248,36 @@ int main(int argc, char *argv[]) {
                 do {
                     j += range_size - 1;
                     large_array++;
-                } while (j + range_size < convex[i][1]);
+                } while (j + range_size < label_size);
                 large_array++;
-                size = label_max - i + 1;
+                size = label_max - j + 1;
 
                 for (j = 1; j < large_array; j++) {
-                    printf("j: %d\n", j);
                     if ((ls[j] = (int *)malloc(sizeof(int) * (range_size + 1))) == NULL) {
                         fprintf(stderr, "Error!:malloc[main()->ls]\n");
                         exit(EXIT_FAILURE);
                     }
+                    total_ss_count++;
                     ls[j][0] = range_size;
                     if(j != 1) ls[j][1] = ls[j - 1][range_size];
                     else ls[j][1] = 0;
-
                     for (k = 2; k <= range_size; k++) {
                         //segmentation fault
                         // printf("%d, %d\n", j, k);
                         ls[j][k] = ls[j][k - 1] + 1;
-                        l = ls[j][k];
+                        n = ls[j][k];
                     }
                     // printf("meu\n");
-                    for (k = 1; k < ls[j][0]; k++) {
+                    for (k = 0; k < ls[j][0]; k++) {
                         for (l = k + 1; l <= ls[j][0]; l++) {
-                            m = pair(ls[j][0], k) + l - k - 1;
+                            m = pair(k, l, label_size);
+                            // printf("pair (%d, %d) == %d ", k, l, pair(l, k, label_size));
                             //ifいらないはず
                             //seg
-                            printf("m: %d\n", m);
+                            // printf("m: %d", m);
+                            // printf(" k: %d, l: %d, pairs[m][1] == %d, pairs[m][2] == %d\n", k, l, pairs[m][1], pairs[m][2]);
                             if (pairs[m][1] == k && pairs[m][2] == l) {
-                                pairs[m][1] = 1;
+                                pairs[m][0] = 1;
                             }
                         }
                     }
@@ -286,69 +286,85 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "Error!:malloc[main()->ls]\n");
                     exit(EXIT_FAILURE);
                 }
-
                 ls[large_array][0] = size;
-                ls[large_array][1] = l;
+                ls[large_array][1] = n;
 
                 for (j = 2; ls[large_array][j - 1] + 1 <= label_max; j++) {
                         ls[large_array][j] = ls[large_array][j - 1] + 1;
                 }
-            } else {
-                n = convex[i][1] / convex[i][0];
-                for (j = 0; j < convex[i][0]; j++) {
-                    if (j + n * convex[i][0] <= label_max) large_array++;
-                }
-
-                for (j = 1; j < large_array; j++) {
-                    if ((ls[total_ss_count + j] = (int *)malloc(sizeof(int) * (n + 1))) == NULL) {
-                        fprintf(stderr, "Error!:malloc[main()->ls]\n");
-                        exit(EXIT_FAILURE);
-                    }
-                    ls[total_ss_count + j][0] = n + 1;
-                    ls[total_ss_count + j][1] = j;
-
-                    for (k = 1; k <= n; j++) {
-                        ls[j][k] = ls[j][k - 1] + convex[i][0];
-                    }
-                    for (k = 1; k < ls[j][0]; k++) {
-                        for (l = k + 1; l <= ls[j][0]; l++) {
-                            m = pair(ls[j][0], k) + l - k - 1;
-                            //ifいらないはず
+                total_ss_count++;
+                for (current_array = 1; current_array <= large_array; current_array++) {
+                    for (k = 0; k < ls[current_array][0]; k++) {
+                        for (l = k + 1; l <= ls[current_array][0]; l++) {
+                            m = pair(k, l, label_size);
                             if (pairs[m][1] == k && pairs[m][2] == l) {
-                                pairs[m][1] = 1;
+                                pairs[m][0] = 1;
                             }
                         }
                     }
                 }
+            } else {
+                large_array = 0;
+                n = convex[i][1] / convex[i][0];
+                if (n >= 2) {
+                    for (j = 0; j < convex[i][0]; j++) {
+                        if (j + n * convex[i][0] <= label_max) large_array++;
+                    }
+                    for (j = 1; j <= large_array; j++) {
+                        if ((ls[total_ss_count + j] = (int *)malloc(sizeof(int) * (n + 2))) == NULL) {
+                            fprintf(stderr, "Error!:malloc[main()->ls]\n");
+                            exit(EXIT_FAILURE);
+                        }
+                        ls[total_ss_count + j][0] = n + 1;
+                        ls[total_ss_count + j][1] = j - 1;
+                        for (k = 2; k <= n + 1; k++) {
+                            // printf("%d, %d\n",  ls[total_ss_count + j][k - 1] , convex[i][0]);
+                            ls[total_ss_count + j][k] = ls[total_ss_count + j][k - 1] + convex[i][0];
+
+                        }
+
+                        for (k = 1; k < ls[total_ss_count + j][0]; k++) {
+                            for (l = k + 1; l <= ls[total_ss_count + j][0]; l++) {
+                                m = pair(ls[total_ss_count + j][k], ls[total_ss_count + j][l], label_size);
+                                // printf("p:%d %d\n", ls[total_ss_count + j][k], ls[total_ss_count + j][l]);
+                                //ifいらないはず
+                                if (pairs[m][1] == ls[total_ss_count + j][k] && pairs[m][2] == ls[total_ss_count + j][l]) {
+                                    pairs[m][0] = 1;
+                                }
+                            }
+                        }
+                    }
+                    total_ss_count += large_array;
+                }
             }
         }
-        printf("total_ss_count: %d\n", total_ss_count);
-        size = total_ss_count + 1;
+
+        printf("total_ss_count = %d\n", total_ss_count);
         for (i = 1; i <= nc2(label_size); i++) {
+            // printf("pairs[%d] = (%d, %d, %d)\n", i, pairs[i][0], pairs[i][1], pairs[i][2]);
+
             if (pairs[i][0] == 0) {
-                if ((ls[size] = (int *)malloc(sizeof(int) * (3))) == NULL) {
+                total_ss_count ++;
+                // printf("size: %d\n", size);
+                if ((ls[total_ss_count ] = (int *)malloc(sizeof(int) * (3))) == NULL) {
                     fprintf(stderr, "Error!:malloc[main()->ls]\n");
                     exit(EXIT_FAILURE);
                 }
-                ls[size][0] = 2;
-                ls[size][1] = pairs[i][1];
-                ls[size][2] = pairs[i][2];
-                size++;
+
+                ls[total_ss_count ][0] = 2;
+                ls[total_ss_count ][1] = pairs[i][1];
+                ls[total_ss_count ][2] = pairs[i][2];
             }
         }
-        total_ss_count += size;
+
         if ((temp = (int **)realloc(ls, total_ss_count * sizeof(int *))) == NULL) {
             fprintf(stderr, "Error!:malloc[main()->ls]\n");
             exit(EXIT_FAILURE);
         } else {
             ls = temp;
         }
-        total_ss_count--;
+
     }
-
-
-
-    printf("total_ss_count = %d\n", total_ss_count);
 #if _OUTPUT_SUBMODULAR_SUBSETS_
     for (i = 1; i <= total_ss_count; i++) {
         for (j = 1; j <= ls[i][0]; j++) {
@@ -358,10 +374,9 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-    exit(EXIT_SUCCESS);
+    //候補区間抽出,ここまで
 
-
-
+    
     printf("----------------------------------------------\n");
     printf("input_file: %s\n", argv[1]);
     printf("output_file: %s\n", output_file);
@@ -655,10 +670,13 @@ int main(int argc, char *argv[]) {
         free(ls[i]);
     }
     free(ls);
-    for (i = 0; i <= nc2(label_size) + 1; i++) {
-        free(pairs[i]);
+
+    if (pairs != NULL) {
+        for (i = 0; i <= nc2(label_size) + 1; i++) {
+            free(pairs[i]);
+        }
+        free(pairs);
     }
-    free(pairs);
     free(I_left);
     free(I_right);
     free(label);
