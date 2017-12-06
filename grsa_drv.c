@@ -51,30 +51,22 @@ void GenAllPairs(int **pairs, int label_size) {
 }
 
 int main(int argc, char *argv[]) {
-    int i, j, k, l, m, n, current_array, node, edge, grids_node, flag, size, ccvex, prev, rs2;
-    int scale, label_max, grids_edge, count, last_move, ci, large_array, total_ss_count;
+    int i, j, k, node, edge, grids_node, flag;
+    int scale, grids_edge, count, last_move, ci, total_ss_count;
     int *t, *label, *newlabel, *label_index;
-    int convex[10][2];
     // I->入力画像の輝度, t->2値変数, label->ラベル付け
     int label_size = 16;
     int range_size = 4;
     int errlog = 0;
-    int error_count = 0;
     int lamda = 1;
     double decreace, prev_energy, before_energy, new_energy, err,  T = INF;
     double *f;
     char output_file[100];
     clock_t start;
-    img output;
     // Ge:エネルギー計算用
     Graph G, Ge;
-    Input image;
+    Image image;
     Subsets ss;
-
-
-#if _OUTPUT_INFO_
-    double maxflow;
-#endif
 
 #if _OUTPUT_T_
     FILE *fp;
@@ -110,7 +102,7 @@ int main(int argc, char *argv[]) {
     }
 
     label_size = 256 / scale;
-    label_max = label_size - 1;
+    image.label_max = label_size - 1;
     if (range_size < 2) {
         fprintf(stderr, "Error! Range size == %d \n", range_size);
         exit (EXIT_FAILURE);
@@ -121,9 +113,8 @@ int main(int argc, char *argv[]) {
     }
     
     T = theta(range_size, INF);
-    range_size = 5;
     // ccvex 凸区間の数(count of convex)
-    gen_submodular_subsets(label_size, range_size, &ss);
+    total_ss_count = gen_submodular_subsets(label_size, range_size, &ss);
     readStrBitmap(&image, argv[1], scale);
 
     printf("----------------------------------------------\n");
@@ -163,7 +154,7 @@ int main(int argc, char *argv[]) {
     // 輝度から初期ラベル設定
     for (i = 1; i <= grids_node ; i++) label[i] = 0;
     cpyarray(newlabel, label, grids_node);
-    prev_energy = energy_str(&Ge, label, T, lamda, image.width, image.left, image.right);
+    prev_energy = energy_str(&Ge, label, T, lamda, image);
     printf("Energy (before): %.0lf\n", prev_energy);
 
 
@@ -193,13 +184,13 @@ int main(int argc, char *argv[]) {
     start = clock();
 
     do {
-        prev_energy = energy_str(&Ge, label, T, lamda, image.width, image.left, image.right);
+        prev_energy = energy_str(&Ge, label, T, lamda, image);
         for(i = 1; i <= total_ss_count; i++) {
             if (last_move == i) {
                 flag = 1;
                 break;
             }
-            before_energy = energy_str(&Ge, label, T, lamda, image.width, image.left, image.right);
+            before_energy = energy_str(&Ge, label, T, lamda, image);
 
 #if _OUTPUT_T_
             fprintf(fp, "\n-------------------------------------\n");
@@ -231,7 +222,8 @@ int main(int argc, char *argv[]) {
             edge = 2 * grids_node * ss.ls[i][0] + 2 * grids_edge * (ss.ls[i][0] - 1) * ((ss.ls[i][0] - 1));
 
             newGraph(&G, node, edge);
-            set_edge_str(&G, image.height, image.width, ss.ls[i], label, T, lamda, image.left, image.right);
+            set_edge_str(&G, ss.ls[i], label, T, lamda, image);
+            // resizeGraph(&G, node, edge);
             // set_edge(&G, image.height, image.width, ss.ls[i], label, image.left, T, lamda);
             initAdjList(&G);
 
@@ -261,16 +253,15 @@ int main(int argc, char *argv[]) {
                     newlabel[j] = ss.ls[i][count];
                 } else newlabel[j] = label[j];
             }
-
-            new_energy = energy_str(&Ge, newlabel, T, lamda, image.width, image.left, image.right);
-
+            new_energy = energy_str(&Ge, newlabel, T, lamda, image);
+            printf("Energy : %.0lf\n", new_energy);
             if (new_energy <= before_energy) {
                 last_move = i;
                 cpyarray(label, newlabel, grids_node);
             } else if (new_energy > before_energy) {
                 errlog = 1;
 
-                printf("err %lf -> %lf\n", energy_str(&Ge,  label, T, lamda, image.width, image.left, image.right), energy_str(&Ge, newlabel, T, lamda, image.width, image.left, image.right));
+                printf("err %lf -> %lf\n", energy_str(&Ge,  label, T, lamda, image), energy_str(&Ge, newlabel, T, lamda, image));
                 for (j = 1; j <= ss.ls[i][0]; j++) printf("%d ", ss.ls[i][j]);
                 printf("\n");
             }
@@ -315,9 +306,9 @@ int main(int argc, char *argv[]) {
  #endif
         }
         if (flag) break;
-        decreace = prev_energy - energy_str(&Ge, label, T, lamda, image.width, image.left, image.right);
+        decreace = prev_energy - energy_str(&Ge, label, T, lamda, image);
 #if _SHOW_EACH_ENERGY_
-        printf("Energy : %.0lf\n", energy_str(&Ge, label, T, lamda, image.width, image.left, image.right));
+        printf("Energy : %.0lf\n", energy_str(&Ge, label, T, lamda, image));
 #endif
     } while (decreace > 0);
 
@@ -329,7 +320,7 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-    printf("Energy (after): %.0lf\n", energy_str(&Ge, label, T, lamda, image.width, image.left, image.right));
+    printf("Energy (after): %.0lf\n", energy_str(&Ge, label, T, lamda, image));
     printf("Italation: %d\n", ci);
     printf("Run time[%.2lf]\n", (double) (clock() - start) / CLOCKS_PER_SEC);
 
@@ -345,7 +336,7 @@ int main(int argc, char *argv[]) {
     WriteBmp(output_file, &image.output);
 
 #if _OUTPUT_T_
-    fprintf(fp, "Energy (after): %lf\n", energy_str(&Ge, label, T, lamda, image.width, image.left, image.right));
+    fprintf(fp, "Energy (after): %lf\n", energy_str(&Ge, label, T, lamda, image));
     fclose(fp);
 #endif
 
@@ -355,27 +346,7 @@ int main(int argc, char *argv[]) {
         ReadBmp(output_file, &(image.output));
         // Gray(&truth, &truth);
         Gray(&(image.output), &(image.output));
-
-        if (image.truth.data[0][0].r) {
-            for(i = 1; i <= (image.output.height) * (image.output.width); i++) {
-                if (abs(image.output.data[(i - 1) / image.output.width][(i - 1) % image.output.width].r - image.truth.data[(i - 1) / image.truth.width][(i - 1) % truth.width].r )
-                    >= scale + 1) {
-                    error_count++;
-                }
-            }
-        } else {
-            for(i = 1; i <= (image.output.height) * (image.output.width); i++) {
-                if ((i - 1) / image.output.width >= scale && (i - 1) % image.output.width >= scale &&
-                    (i - 1) / image.output.width <= image.output.height - scale && (i - 1) % image.output.width <= image.output.width - scale) {
-                    if (abs(image.output.data[(i - 1) / image.output.width][(i - 1) % image.output.width].r - image.truth.data[(i - 1) / image.truth.width][(i - 1) % truth.width].r )
-                        >= scale + 1) {
-                        error_count++;
-                    }
-                }
-            }
-        }
-
-        err = 100 * error_count / (double)(image.truth.height * image.truth.width);
+        err = err_rate(image.output, image);
         printf("Error rate : %lf\n", err);
     }
 

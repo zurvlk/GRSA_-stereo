@@ -10,8 +10,9 @@ typedef struct __INPUT_BITMAPS__ {
     int *right;
     int width;
     int height;
+    int label_max;
     int scale;
-}Input;
+}Image;
 
 typedef struct __SUBMODULAR_SUBSETS__ {
     int **ls;
@@ -21,17 +22,17 @@ typedef struct __SUBMODULAR_SUBSETS__ {
 }Subsets;
 
 int function;
-void readStrBitmap(Input *input, char filename[], int scale);
+void readStrBitmap(Image *image, char filename[], int scale);
 int gen_submodular_subsets(int label_size, int range_size, Subsets *ss);
 int nc2(int n);
 double theta(double n, double T);
 double p(int *label, int height, int width);
 double energy(Graph *G, int *label, int *I, double T, int lamda);
-double energy_str(Graph *G, int *label, double T, int lamda, int width, int *I_left, int *I_right);
+double energy_str(Graph *G, int *label, double T, int lamda, Image image);
 double pairwise(double i, double j, double T, int lamda);
 double data(int i, int label);
 void set_edge(Graph *G, int height, int width, int *ls, int *label, int *I, double T, int lamda);
-void set_edge_str(Graph *G, int height, int width, int *ls, int *label, double T, int lamda, int *I_left, int *I_right);
+int set_edge_str(Graph *G, int *ls, int *label, double T, int lamda, Image image);
 int is_convex(int i, int j, double T);
 int isin_array(int *ls, int target);
 
@@ -39,3 +40,4 @@ int make_label_index(Graph *G, int *label, int *label_index, int alpha, int beta
 void set_single_edges(Graph *G, int height, int width);
 int cmparray(int *array1, int *array2, int size);
 void cpyarray(int *terget, int *source, int size);
+double err_rate(img output, Image image);
