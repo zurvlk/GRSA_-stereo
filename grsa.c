@@ -27,12 +27,15 @@ double fmax(double i, double j) {
     return i > j ? i : j;
 }
 double theta(double n, double T) {
-    T = 5;
 
-    // if(!function) return fmin(n > 0 ? n : -n, T);
-    // else return fmin(n * n, T);
-    return fmin(n >= 0 ? n : -n, fmax(n >= 0 ? n - 5 : -n - 5, T));
 
+    if(!function) return fmin(n > 0 ? n : -n, T);
+    else return fmin(n * n, T);
+    // n = abss(n);
+    // T = INF;
+    // if (n <= 2) return 1.5 * n;
+    // else if (n >= 2 && n <= 3) return 1.5 * 2;
+    // else return 1.5 * (n - 1);
 }
 
 // リスト内にtargetが存在 1
@@ -54,8 +57,6 @@ int is_convex(int i, int j, double T) {
     else return 0;
 }
 
-
-
 // 2つの配列の値がすべて同一 0
 // 2つの配列の値が異なる 1
 int cmparray(int *array1, int *array2, int size) {
@@ -74,136 +75,293 @@ void cpyarray(int *terget, int *source, int size) {
     }
 }
 
-
-int gen_submodular_subsets(int label_size, int range_size, int **ls) {
-    int i, j, k, l, size, large_array, total_ss_count;
-    int label_max = label_size - 1;
-    if (label_size != range_size) {
-        large_array = 0;
-        if (range_size > 2) {
-            i = 0;
-            do {
-                i += range_size - 1;
-                large_array++;
-            } while (i + range_size < label_size);
-            large_array++;
-            size = label_max - i + 1;
-            total_ss_count = large_array + nc2(label_size) - (large_array - 1) * nc2(range_size) - nc2(size);
-        } else total_ss_count = nc2(label_size);
-
-
-        // large_array = label_size / (range_size - 1) - 1;
-
-
-        printf("size : %d large_array %d\n", size, large_array);
-        if ((ls = (int **)malloc(sizeof(int*) * (total_ss_count + 1))) == NULL) {
-            fprintf(stderr, "Error!:malloc[main()->ls]\n");
-            exit(EXIT_FAILURE);
-        }
-
-        if (range_size > 2) {
-            for (i = 1; i < large_array; i++) {
-                if ((ls[i] = (int *)malloc(sizeof(int) * (range_size + 1))) == NULL) {
-                    fprintf(stderr, "Error!:malloc[main()->ls]\n");
-                    exit(EXIT_FAILURE);
-                }
-                ls[i][0] = range_size;
-                if(i != 1) ls[i][1] = ls[i - 1][range_size];
-                else ls[i][1] = 0;
-                // printf("%d ", ls[i][1]);
-                for (j = 2; j <= range_size; j++) {
-                    ls[i][j] = ls[i][j - 1] + 1;
-                    k = ls[i][j];
-                    // ls[i][j] = (i - 1) * range_size + j;
-                    // printf("%d ", ls[i][j]);
-                }
-                // printf("\n");
-            }
-
-            if ((ls[large_array] = (int *)malloc(sizeof(int) * size)) == NULL) {
-                fprintf(stderr, "Error!:malloc[main()->ls]\n");
-                exit(EXIT_FAILURE);
-            }
-            ls[large_array][0] = size;
-            ls[large_array][1] = k;
-            // printf("%d ", ls[large_array][1]);
-            for (j = 2; ls[large_array][j - 1] + 1 <= label_max; j++) {
-                    ls[large_array][j] = ls[large_array][j - 1] + 1;
-                    // ls[i][j] = (i - 1) * range_size + j;
-                    // printf("%d ", ls[large_array][j]);
-            }
-            // printf("\n\n");
-            for (i = large_array + 1; i <= total_ss_count; i++) {
-                if ((ls[i] = (int *)malloc(sizeof(int) * (3))) == NULL) {
-                    fprintf(stderr, "Error!:malloc[main()->ls]\n");
-                    exit(EXIT_FAILURE);
-                }
-                ls[i][0] = 2;
-            }
-            i = 0;
-            j = range_size;
-            k = large_array + 1;
-            l = range_size - 1;
-            while(i < label_max - (ls[large_array][0] - 1)) {
-                ls[k][1] = i;
-                ls[k][2] = j;
-                // printf("%d %d \n", ls[k][1], ls[k][2]);
-                k++;
-                if (j == label_max) {
-                    i++;
-                    j = l + 1;
-                    if (i == l - 1) l += range_size - 1;
-                }
-                else j++;
-            }
-        } else {
-
-            for (i = 1; i <= total_ss_count; i++) {
-                if ((ls[i] = (int *)malloc(sizeof(int) * (3))) == NULL) {
-                    fprintf(stderr, "Error!:malloc[main()->ls]\n");
-                    exit(EXIT_FAILURE);
-                }
-                ls[i][0] = 2;
-            }
-
-            i = 0;
-            j = 1;
-            k = large_array + 1;
-            while(i < label_max) {
-                ls[k][1] = i;
-                ls[k][2] = j;
-                // printf("%d %d \n", ls[k][1], ls[k][2]);
-                k++;
-                if (j == label_max) {
-                    i++;
-                    j = i + 1;
-                }
-                else j++;
-            }
-        }
-    } else {
-        large_array = 1;
-        total_ss_count = 1;
-        if ((ls = (int **)malloc(sizeof(int*) * (total_ss_count + 1))) == NULL) {
-            fprintf(stderr, "Error!:malloc[main()->ls]\n");
-            exit(EXIT_FAILURE);
-        }
-
-        if ((ls[1] = (int *)malloc(sizeof(int) * (range_size + 1))) == NULL) {
-            fprintf(stderr, "Error!:malloc[main()->ls]\n");
-            exit(EXIT_FAILURE);
-        }
-        ls[1][0] = range_size;
-        for (i = 1; i <= range_size; i++) ls[1][i] = i - 1;
+int pair(int i, int j, int label_size) {
+    int res = 0, c;
+    int temp = i;
+    if (i > j) {
+        i = j;
+        j = temp;
     }
 
-    for (i = 1; i <= total_ss_count; i++) {
+    if(i == 0) return j;
+    c = 0;
+    while (c < i) {
+        res += label_size - c;
+        c++;
+    }
+    // printf("res: %d j: %d\n", res, j);
+    res += j - 2 * c;
+    return res;
+}
+
+int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
+    int i, j, k, l, m, n, prev, rs2, current_array, large_array, size;
+    
+    int ccvex = 0, label_max = label_size - 1;
+    int convex[10][2];
+
+    int *temp;
+
+    // 候補区間抽出
+    i = 0;
+    j = 1;
+    while (j < label_size) {
+        j++;
+        // printf("i: %d, j: %d isc: %f %f\n", i, j, theta(j, T) - theta(j - 1, T) , (theta(j - 1, T) - theta(i, T)) / (j - 1 - i));
+        if (j > 1  && is_convex(i, j, ss->T)) {
+            prev = 1;
+            if (j == label_size) {
+                convex[ccvex][0] = i;
+                convex[ccvex][1] = j - 1;
+                ccvex++;
+            }
+            // printf("%d - > %d\n", i, j);
+        } else if (i != j - 1 && prev) {
+            // printf("%d %d\n", i, j);
+            convex[ccvex][0] = i;
+            convex[ccvex][1] = j - 1;
+            i = j - 1;
+            ccvex++;
+            prev = 0;
+        } else {
+            i = j - 1;
+            prev = 0;
+        }
+        if (ccvex > 9) break;
+
+    }
+    for (i = 0; i < ccvex; i++) {
+        printf("T : %.0lf 候補区間: %d --> %d\n", ss->T, convex[i][0], convex[i][1]);
+    }
+
+    // 全てのラベルのペアを列挙
+    if ((ss->pairs = (int **)malloc(sizeof(int*) * (nc2(label_size) + 1))) == NULL) {
+        fprintf(stderr, "Error!:malloc[main()->pairs]\n");
+        exit(EXIT_FAILURE);
+    }
+
+    k = 1;
+    for (i = 0; i < label_max; i++) {
+        for (j = i + 1; j <= label_max; j++) {
+            if ((ss->pairs[k] = (int*)malloc(sizeof(int) * 3)) == NULL) {
+                fprintf(stderr, "Error!:malloc[main()-=>pairs]\n");
+                exit(EXIT_FAILURE);
+            }
+            ss->pairs[k][0] = 0;
+            ss->pairs[k][1] = i;
+            ss->pairs[k][2] = j;
+            k++;
+        }
+    }
+
+
+    if ((ss->ls = (int **)malloc(sizeof(int*) * (nc2(label_size) + 1))) == NULL) {
+        fprintf(stderr, "Error!:malloc[main()->ls]\n");
+        exit(EXIT_FAILURE);
+    }
+
+    ss->number = 0;
+    if(label_size == range_size) {
+        large_array = 1;
+        ss->number = 1;
+        if ((temp = (int **)realloc(ss->ls, 2 * sizeof(int *))) == NULL) {
+            fprintf(stderr, "Error!:malloc[main()->ls]\n");
+            exit(EXIT_FAILURE);
+        } else {
+            ss->ls = temp;
+        }
+
+        if ((ss->ls[1] = (int *)malloc(sizeof(int) * (range_size + 1))) == NULL) {
+            fprintf(stderr, "Error!:malloc[main()->ls]\n");
+            exit(EXIT_FAILURE);
+        }
+        ss->ls[1][0] = range_size;
+        for (i = 1; i <= range_size; i++) ss->ls[1][i] = i - 1;
+        ss->number = 1;
+    } else if (range_size == 2) {
+        ss->ls = ss->pairs;
+        for (i = 1; i <= nc2(label_size); i++) ss->ls[i][0] = 2;
+        ss->number = nc2(label_size);
+
+    } else {
+        for (i = 0; i < ccvex; i++) {
+            if (convex[i][0] == 0) {
+                if (convex[i][1] > range_size) rs2 = range_size;
+                else rs2 = convex[i][1];
+                large_array = 0;
+                j = 0;
+                do {
+                    j += rs2 - 1;
+                    large_array++;
+                } while (j + rs2 < label_size);
+                large_array++;
+                size = label_max - j + 1;
+
+                for (j = 1; j < large_array; j++) {
+                    if ((ss->ls[j] = (int *)malloc(sizeof(int) * (rs2 + 1))) == NULL) {
+                        fprintf(stderr, "Error!:malloc[main()->ls]\n");
+                        exit(EXIT_FAILURE);
+                    }
+                    ss->number++;
+                    ss->ls[j][0] = rs2;
+                    if(j != 1) ss->ls[j][1] = ss->ls[j - 1][rs2];
+                    else ss->ls[j][1] = 0;
+                    for (k = 2; k <= rs2; k++) {
+                        //segmentation fault
+                        // printf("%d, %d\n", j, k);
+                        ss->ls[j][k] = ss->ls[j][k - 1] + 1;
+                        n = ss->ls[j][k];
+                    }
+                }
+                if ((ss->ls[large_array] = (int *)malloc(sizeof(int) * size)) == NULL) {
+                    fprintf(stderr, "Error!:malloc[main()->ls]\n");
+                    exit(EXIT_FAILURE);
+                }
+                ss->ls[large_array][0] = size;
+                ss->ls[large_array][1] = n;
+
+                for (j = 2; ss->ls[large_array][j - 1] + 1 <= label_max; j++) {
+                    ss->ls[large_array][j] = ss->ls[large_array][j - 1] + 1;
+                }
+                ss->number++;
+
+                for (current_array = 1; current_array <= large_array; current_array++) {
+                    for (k = 0; k < ss->ls[current_array][0]; k++) {
+                        for (l = k + 1; l <= ss->ls[current_array][0]; l++) {
+                            m = pair(ss->ls[current_array][k], ss->ls[current_array][l], label_size);
+                            // printf("pair (%d, %d) == %d \n", ls[current_array][k], ls[current_array][l], m);
+
+                            if (ss->pairs[m][1] == ss->ls[current_array][k] && ss->pairs[m][2] == ss->ls[current_array][l]) {
+                                ss->pairs[m][0] = 1;
+                            }
+                        }
+                    }
+                }
+            } else {
+                large_array = 0;
+                n = convex[i][1] / convex[i][0];
+                if (n + 1 > range_size) n = range_size - 1;
+                if (n >= 2) {
+                    for (j = 0; j < convex[i][0]; j++) {
+                        if (j + n * convex[i][0] <= label_max) large_array++;
+                    }
+                    for (j = 1; j <= large_array; j++) {
+                        if ((ss->ls[ss->number + j] = (int *)malloc(sizeof(int) * (n + 2))) == NULL) {
+                            fprintf(stderr, "Error!:malloc[main()->ls]\n");
+                            exit(EXIT_FAILURE);
+                        }
+                        ss->ls[ss->number + j][0] = n + 1;
+                        ss->ls[ss->number + j][1] = j - 1;
+                        for (k = 2; k <= n + 1; k++) {
+                            // printf("%d, %d\n",  ls[ss->number + j][k - 1] , convex[i][0]);
+                            ss->ls[ss->number + j][k] = ss->ls[ss->number + j][k - 1] + convex[i][0];
+
+                        }
+
+                        for (k = 1; k < ss->ls[ss->number + j][0]; k++) {
+                            for (l = k + 1; l <= ss->ls[ss->number + j][0]; l++) {
+                                m = pair(ss->ls[ss->number + j][k], ss->ls[ss->number + j][l], label_size);
+                                // printf("p:%d %d\n", ls[ss->number + j][k], ls[ss->number + j][l]);
+                                //ifいらないはず
+                                if (ss->pairs[m][1] == ss->ls[ss->number + j][k] && ss->pairs[m][2] == ss->ls[ss->number + j][l]) {
+                                    ss->pairs[m][0] = 1;
+                                }
+                            }
+                        }
+                    }
+                    ss->number += large_array;
+                }
+            }
+        }
+
+
+        for (i = 1; i <= nc2(label_size); i++) {
+            // printf("pairs[%d] = (%d, %d, %d)\n", i, pairs[i][0], pairs[i][1], pairs[i][2]);
+
+            if (ss->pairs[i][0] == 0) {
+                ss->number++;
+                // printf("size: %d\n", size);
+                if ((ss->ls[ss->number] = (int *)malloc(sizeof(int) * (3))) == NULL) {
+                    fprintf(stderr, "Error!:malloc[main()->ls]\n");
+                    exit(EXIT_FAILURE);
+                }
+
+                ss->ls[ss->number ][0] = 2;
+                ss->ls[ss->number ][1] = ss->pairs[i][1];
+                ss->ls[ss->number ][2] = ss->pairs[i][2];
+
+            }
+        }
+
+        if ((temp = (int **)realloc(ss->ls, ss->number * sizeof(int *))) == NULL) {
+            fprintf(stderr, "Error!:malloc[main()->ls]\n");
+            exit(EXIT_FAILURE);
+        } else {
+            ss->ls = temp;
+        }
+
+    }
+    printf("ss->number = %d\n", ss->number);
+#if _OUTPUT_SUBMODULAR_SUBSETS_
+    for (i = 1; i <= ss->number; i++) {
         for (j = 1; j <= ls[i][0]; j++) {
             printf("%d ", ls[i][j]);
         }
         printf("\n");
     }
-    return total_ss_count;
+#endif
+    return ss->number; 
+}
+
+void readStrBitmap(Input *input, char filename[], int scale) {
+    int i, j, grids_node;
+    char imgleft[100];
+    char imgright[100];
+    char imgtruth[100];
+
+    img left, right, truth;
+    strcpy(imgleft, filename);
+    strcpy(imgright, filename);
+    strcpy(imgtruth, filename);
+
+    strcat(imgleft, "left.bmp");
+    strcat(imgright, "right.bmp");
+    strcat(imgtruth, "truth.bmp");
+
+    ReadBmp(imgleft, &(input->raw_left));
+    ReadBmp(imgright, &(input->raw_right));
+    ReadBmp(imgtruth, &(input->truth));
+    ReadBmp(imgtruth, &(input->output));
+
+    input->width = input->raw_left.width;
+    input->height = input->raw_left.height;
+    grids_node = input->height * input->width;
+
+    Gray(&(input->raw_left), &(input->raw_left));
+    Gray(&(input->raw_right), &(input->raw_right));
+    Gray(&(input->truth), &(input->truth));
+
+
+    if ((input->left = (int *)malloc(sizeof(int) * (grids_node + 1))) == NULL) {
+        fprintf(stderr, "Error!:malloc[main()->input.left]\n");
+        exit(EXIT_FAILURE);
+    }
+    if ((input->right = (int *)malloc(sizeof(int) * (grids_node + 1))) == NULL) {
+        fprintf(stderr, "Error!:malloc[main()->input.right]\n");
+        exit(EXIT_FAILURE);
+    }
+
+    for (i = 0; i <  input->height; i++) {
+        for (j = 0; j < input->width; j++) {
+            input->left[i * input->width + j + 1] = input->raw_left.data[i][j].r / scale;
+        }
+    }
+    for (i = 0; i <  input->height; i++) {
+        for (j = 0; j < input->width; j++) {
+            input->right[i * right.width + j + 1] = input->raw_right.data[i][j].r / scale;
+        }
+    }
+
 }
 
 
