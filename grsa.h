@@ -31,8 +31,7 @@ double energy(Graph *G, int *label, int *I, double T, int lamda);
 double energy_str(Graph *G, int *label, double T, int lamda, Image image);
 double pairwise(double i, double j, double T, int lamda);
 double data(int i, int label);
-void set_edge(Graph *G, int height, int width, int *ls, int *label, int *I, double T, int lamda);
-int set_edge_str(Graph *G, int *ls, int *label, double T, int lamda, Image image);
+int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image);
 int is_convex(int i, int j, double T);
 int isin_array(int *ls, int target);
 

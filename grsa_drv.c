@@ -21,34 +21,8 @@
 #define _OUTPUT_PROGRESS_ 0 // 処理過程ファイル出力 0:出力しない 1:出力する
 #define _RUN_FIRST_ONLY_ 0 // 1度目の移動で終了(デバッグ用)
 #define _SHOW_EACH_ENERGY_ 0 // 各移動時にエネルギー表示
-#define _OUTPUT_SUBMODULAR_SUBSETS_ 0
+#define _OUTPUT_SUBMODULAR_SUBSETS_ 1
 
-
-void GenAllPairs(int **pairs, int label_size) {
-    int i, j, k;
-    int label_max = label_size - 1;
-    if ((pairs = (int **)malloc(sizeof(int*) * (nc2(label_size) + 1))) == NULL) {
-        fprintf(stderr, "Error!:malloc[main()->pairs]\n");
-        exit(EXIT_FAILURE);
-    }
-    printf("%d\n", nc2(label_size));
-
-    k = 1;
-    for (i = 0; i < label_max; i++) {
-        for (j = i + 1; j <= label_max; j++) {
-            if ((pairs[k] = (int*)malloc(sizeof(int) * 3)) == NULL) {
-                fprintf(stderr, "Error!:malloc[main()->pairs]\n");
-                exit(EXIT_FAILURE);
-            }
-            pairs[k][0] = 0;
-            pairs[k][1] = i;
-            pairs[k][2] = j;
-
-            printf("(%d, %d): %d\n", i, j, k);
-            k++;
-        }
-    }
-}
 
 int main(int argc, char *argv[]) {
     int i, j, k, node, edge, grids_node, flag;
@@ -111,11 +85,20 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error! label_size < range_size \n");
         exit (EXIT_FAILURE);
     }
-    
+
     T = theta(range_size, INF);
     // ccvex 凸区間の数(count of convex)
     total_ss_count = gen_submodular_subsets(label_size, range_size, &ss);
     readStrBitmap(&image, argv[1], scale);
+
+    for (i = 1; i <= total_ss_count; i++) {
+        printf("submodular subsets: ");
+        printf("%d, (%d) ",i, ss.ls[i][0]);
+        for (j = 1; j <= ss.ls[i][0]; j++) {
+            printf("%d ", ss.ls[i][j]);
+        }
+        printf(" end\n");
+    }
 
     printf("----------------------------------------------\n");
     printf("input_file: %s\n", argv[1]);
@@ -222,7 +205,7 @@ int main(int argc, char *argv[]) {
             edge = 2 * grids_node * ss.ls[i][0] + 2 * grids_edge * (ss.ls[i][0] - 1) * ((ss.ls[i][0] - 1));
 
             newGraph(&G, node, edge);
-            set_edge_str(&G, ss.ls[i], label, T, lamda, image);
+            set_edge(&G, ss.ls[i], label, T, lamda, image);
             // resizeGraph(&G, node, edge);
             // set_edge(&G, image.height, image.width, ss.ls[i], label, image.left, T, lamda);
             initAdjList(&G);
@@ -260,7 +243,6 @@ int main(int argc, char *argv[]) {
                 cpyarray(label, newlabel, grids_node);
             } else if (new_energy > before_energy) {
                 errlog = 1;
-
                 printf("err %lf -> %lf\n", energy_str(&Ge,  label, T, lamda, image), energy_str(&Ge, newlabel, T, lamda, image));
                 for (j = 1; j <= ss.ls[i][0]; j++) printf("%d ", ss.ls[i][j]);
                 printf("\n");
