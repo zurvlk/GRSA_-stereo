@@ -55,19 +55,22 @@ int main(int argc, char *argv[]) {
     char pf[100];
     system("rm output/*.bmp &> /dev/null");
 #endif
+    dterm = 0;
     function = 1;
-    if (argc != 2 && argc != 3 && argc != 5 && argc != 6) {
-        printf("Usage: %s <input_file> <output_file(option)> <range_size(option)> <scale(option)> <lamda (option)>\n", argv[0]);
+    if (argc != 2 && argc != 3 && argc != 5 && argc != 6 && argc != 7 && argc != 8) {
+        printf("Usage: %s <input_file> <output_file(option)> <range_size(option)> <scale(option)> <lamda (option)>  <Dterm 0: Dt, 1:normal(option)> <T (option)>\n", argv[0]);
         return 1;
     }
+    printf("argc == %d\n", argc);
 
     if (argc == 2) strcpy(output_file, "/dev/null");
     else strcpy(output_file, argv[2]);
-    if (argc == 5 || argc == 6) {
+    if (argc >= 5 && argc <= 8) {
         range_size = atoi(argv[3]);
         scale = atoi(argv[4]);
         lamda = atoi(argv[5]);
-        if(argc == 7) T = atof(argv[6]);
+        if(argc >= 7)  dterm = atoi(argv[6]);
+         if(argc == 8)  T = atof(argv[7]);
     }
 
     if(T < range_size) {
@@ -91,14 +94,15 @@ int main(int argc, char *argv[]) {
     // ccvex 凸区間の数(count of convex)
     total_ss_count = gen_submodular_subsets(label_size, range_size, &ss);
     readStrBitmap(&image, argv[1], scale);
-    printf("total_ss_count: %d\n", total_ss_count);
+    printf("submodular subsets: \n");
     for (i = 1; i <= total_ss_count; i++) {
-        printf("submodular subsets: ");
-        printf("%d, (%d) ",i, ss.ls[i][0]);
-        for (j = 1; j <= ss.ls[i][0]; j++) {
-            printf("%d ", ss.ls[i][j]);
+        if (ss.ls[i][0] != 1) {
+            printf("%d, (%d) ",i, ss.ls[i][0]);
+            for (j = 1; j <= ss.ls[i][0]; j++) {
+                printf("%d ", ss.ls[i][j]);
+            }
+            printf(" end\n");
         }
-        printf(" end\n");
     }
 
     printf("----------------------------------------------\n");
@@ -108,6 +112,9 @@ int main(int argc, char *argv[]) {
     printf("range_size: %d\n", range_size);
     printf("lambda: %d\n", lamda);
     printf("T: %.2f\n", T);
+    printf("Data term: ");
+    if(dterm == 0) printf("Dt\n");
+    else printf("normal\n");
     if(theta(2, 2 * 2) > 2) printf("Vpq(fp, fq) = (fp - fq)^2\n");
     else printf("Vpq(fp, fq) = |fp - fq|\n");
 

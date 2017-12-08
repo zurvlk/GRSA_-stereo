@@ -108,6 +108,8 @@ int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
 
     int **temp;
 
+    ss->number = 0;
+
     // 候補区間抽出
     i = 0;
     j = 1;
@@ -189,7 +191,6 @@ int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
         ss->ls = ss->pairs;
         for (i = 1; i <= nc2(label_size); i++) ss->ls[i][0] = 2;
         ss->number = nc2(label_size);
-
     } else {
         for (i = 0; i < ccvex; i++) {
             if (convex[i][0] == 0) {
@@ -202,20 +203,18 @@ int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
                     large_array++;
                 } while (j + rs2 - 1 < label_size);
                 large_array++;
-
-                printf("large_array %d\n", large_array);
+                ss->number = large_array;
 
                 for (j = 1; j < large_array; j++) {
                     if ((ss->ls[j] = (int *)malloc(sizeof(int) * (rs2 + 1))) == NULL) {
                         fprintf(stderr, "Error!:malloc[main()->ls]\n");
                         exit(EXIT_FAILURE);
                     }
-                    ss->number++;
                     ss->ls[j][0] = rs2;
                     if(j != 1) ss->ls[j][1] = ss->ls[j - 1][rs2];
                     else ss->ls[j][1] = 0;
                     for (k = 2; k <= rs2; k++) {
-                        //segmentation fault
+                        //segmentation faultT, lamda);
                         // printf("%d, %d\n", j, k);
                         ss->ls[j][k] = ss->ls[j][k - 1] + 1;
                         n = ss->ls[j][k];
@@ -226,18 +225,13 @@ int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
                     fprintf(stderr, "Error!:malloc[main()->ls]\n");
                     exit(EXIT_FAILURE);
                 }
-                printf("size: %d\n", size);
-                printf("n: %d\n", n);
                 ss->ls[large_array][0] = size;
                 ss->ls[large_array][1] = n;
 
                 for (j = 2; ss->ls[large_array][j - 1] + 1 <= label_max; j++) {
                     ss->ls[large_array][j] = ss->ls[large_array][j - 1] + 1;
                     n = ss->ls[large_array][j];
-                    printf("%d ", n);
                 }
-                ss->number++;
-                printf("n: %d\n", n);
 
                 for (current_array = 1; current_array <= large_array; current_array++) {
                     for (k = 0; k < ss->ls[current_array][0]; k++) {
@@ -251,6 +245,7 @@ int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
                         }
                     }
                 }
+
             } else {
                 large_array = 0;
                 n = convex[i][1] / convex[i][0];
@@ -269,7 +264,6 @@ int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
                         for (k = 2; k <= n + 1; k++) {
                             // printf("%d, %d\n",  ls[ss->number + j][k - 1] , convex[i][0]);
                             ss->ls[ss->number + j][k] = ss->ls[ss->number + j][k - 1] + convex[i][0];
-
                         }
 
                         for (k = 1; k < ss->ls[ss->number + j][0]; k++) {
@@ -282,10 +276,11 @@ int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
                                 }
                             }
                         }
-                    }
-                    ss->number += large_array;
+                    }    
                 }
+                ss->number += large_array;
             }
+
         }
 
     #if _CONSIDE_ALL_PAIRS_
@@ -308,7 +303,7 @@ int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
         }
     #endif
 
-        if ((temp = (int **)realloc(ss->ls, ss->number * sizeof(int *))) == NULL) {
+        if ((temp = (int **)realloc(ss->ls, (ss->number + 1) * sizeof(int *))) == NULL) {
             fprintf(stderr, "Error!:malloc[main()->ls]\n");
             exit(EXIT_FAILURE);
         } else {
@@ -317,15 +312,8 @@ int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
         }
 
     }
-    printf("ss->number = %d\n", ss->number);
-#if _OUTPUT_SUBMODULAR_SUBSETS_
-    for (i = 1; i <= ss->number; i++) {
-        for (j = 1; j <= ls[i][0]; j++) {
-            printf("%d ", ls[i][j]);
-        }
-        printf("\n");
-    }
-#endif
+    // printf("ss->number %d\n", ss->ls[ss->number][0]);
+    // printf("%d\n", ss->ls[large_array][1]);
     return ss->number;
 }
 
@@ -499,16 +487,17 @@ double energy_str(Graph *G, int *label,  double T, int lamda, Image image) {
     int i;
     double energy = 0;
     //* Dterm
-    //*
-    for (i = 1; i <= G->n - 2; i++) {
-        energy += data_str(i, label[i], image.width, image.left, image.right);
+    if (dterm == 1) {
+        for (i = 1; i <= G->n - 2; i++) {
+            energy += data_str(i, label[i], image.width, image.left, image.right);
         // energy += data(I_left[i], label[i]);
+        }
+    } else {
+        for(int i = 1; i < G->n - 1; i++) {
+            energy += Dt(label[i], &image, i / image.width, i % image.width);
+        }
     }
-    /*/
-    for(int i = 1; i < G->n - 1; i++){
-        energy += Dt(label[i], &image, i / image.width, i % image.width);
-    }
-    // */
+    
     // Vterm
     for (i = 1; i <= G->m - 2 * (G->n - 2); i++) {
         energy += pairwise(label[G->tail[i]], label[G->head[i]], T, lamda);
@@ -688,8 +677,10 @@ int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image) {
             setEdge(G, edge_count, tail, head, 0);
             if(isin[i]) {
                 // G->capa[edge_count] = data(I_left[i],ls[j]) + nnp_4_grsa(i, j, height, width, ls, label, T, lamda);
-                G->capa[edge_count] = data_str(i, ls[j], image.width, image.left, image.right) + near_nodes(i, j, image.height, image.width, ls, label, isin, T, lamda);
-                // G->capa[edge_count] = Dt(ls[j], &image, i / image.width, i % image.width) + near_nodes(i, j, image.height, image.width, ls, label, isin, T, lamda);
+                // これまでの
+                if (dterm == 0) G->capa[edge_count] = Dt(ls[j], &image, i / image.width, i % image.width) + near_nodes(i, j, image.height, image.width, ls, label, isin, T, lamda);
+                else  G->capa[edge_count] = data_str(i, ls[j], image.width, image.left, image.right) + near_nodes(i, j, image.height, image.width, ls, label, isin, T, lamda);
+                
             }
 
             if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
@@ -704,8 +695,9 @@ int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image) {
         setEdge(G, edge_count, i + grids_node * (ls[0] - 1), sink, 0);
         if(isin[i]) {
             // G->capa[edge_count] = data(I_left[i], ls[ls[0]]) + nnp_4_grsa(i, ls[0], height, width, ls, label, T, lamda);
-            G->capa[edge_count] = data_str(i, ls[ls[0]], image.width, image.left, image.right) + near_nodes(i, j, image.height, image.width , ls, label, isin, T, lamda);
-            // G->capa[edge_count] = Dt(ls[ls[0]], &image, i / image.width, i % image.width) + near_nodes(i, j, image.height, image.width , ls, label, isin, T, lamda);
+            // G->capa[edge_count] = data_str(i, ls[ls[0]], image.width, image.left, image.right) + near_nodes(i, j, image.height, image.width , ls, label, isin, T, lamda);
+            if (dterm == 0) G->capa[edge_count] = Dt(ls[ls[0]], &image, i / image.width, i % image.width) + near_nodes(i, j, image.height, image.width , ls, label, isin, T, lamda);
+            else G->capa[edge_count] = data_str(i, ls[ls[0]], image.width, image.left, image.right) + near_nodes(i, j, image.height, image.width , ls, label, isin, T, lamda);
         }
 
         if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
