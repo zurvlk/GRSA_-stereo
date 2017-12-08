@@ -2,16 +2,16 @@
 ulimit -s unlimited
 start_time=`date +%s`
 count=1
-result=log/`date +%Y%m%d_%H-%M-%S`.log
+result=`date +%Y%m%d_%H-%M-%S`.log
 echo "---GRSA---"
-for lambda in 5
+for lambda in 1 2 3 4 5 6 7 8
 do
     for T in  2 3 4 5 6 7 8
     do
 
     # range_size <= label_size
     job_start=`date +%s`
-    ./grsa input/tsukuba_ output/tsukuba_${lambda}_${T}.bmp ${T} 16 $lambda >>  ${result}
+    ./grsa input/tsukuba_ output/tsukuba_${lambda}_${T}.bmp ${T} 16 $lambda >>  log/labbda_${lambda}_${result}
     job_end=`date +%s`
     time=$((job_end - job_start));
     count=`expr $count + 1`
@@ -33,6 +33,7 @@ done
 # #         count=`expr $count + 1`
 # #         echo "venus T=${T}, lambda=${lambda} [${time}s]";
 # #     done
+    # range_size <= label_size
 # # done
 #
 # for T in  5 6 7 8

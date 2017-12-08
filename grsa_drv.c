@@ -87,10 +87,11 @@ int main(int argc, char *argv[]) {
     }
 
     T = theta(range_size, INF);
+    ss.T = T;
     // ccvex 凸区間の数(count of convex)
     total_ss_count = gen_submodular_subsets(label_size, range_size, &ss);
     readStrBitmap(&image, argv[1], scale);
-
+    printf("total_ss_count: %d\n", total_ss_count);
     for (i = 1; i <= total_ss_count; i++) {
         printf("submodular subsets: ");
         printf("%d, (%d) ",i, ss.ls[i][0]);
@@ -199,7 +200,13 @@ int main(int argc, char *argv[]) {
             }
 #endif
 
-
+            if (ss.ls[i][0] == 1) continue;
+            // printf("submodular subsets: ");
+            // printf("%d, (%d) ",i, ss.ls[i][0]);
+            // for (j = 1; j <= ss.ls[i][0]; j++) {
+            //     printf("%d ", ss.ls[i][j]);
+            // }
+            // printf(" end\n");
             node = image.height * image.width * ss.ls[i][0] + 2;
             grids_edge = (image.height - 1) * image.width + image.height * (image.width - 1);
             edge = 2 * grids_node * ss.ls[i][0] + 2 * grids_edge * (ss.ls[i][0] - 1) * ((ss.ls[i][0] - 1));
@@ -237,7 +244,7 @@ int main(int argc, char *argv[]) {
                 } else newlabel[j] = label[j];
             }
             new_energy = energy_str(&Ge, newlabel, T, lamda, image);
-            printf("Energy : %.0lf\n", new_energy);
+            // printf("Energy : %.0lf\n", new_energy);
             if (new_energy <= before_energy) {
                 last_move = i;
                 cpyarray(label, newlabel, grids_node);
@@ -290,7 +297,7 @@ int main(int argc, char *argv[]) {
         if (flag) break;
         decreace = prev_energy - energy_str(&Ge, label, T, lamda, image);
 #if _SHOW_EACH_ENERGY_
-        printf("Energy : %.0lf\n", energy_str(&Ge, label, T, lamda, image));
+        // printf("Energy : %.0lf\n", energy_str(&Ge, label, T, lamda, image));
 #endif
     } while (decreace > 0);
 

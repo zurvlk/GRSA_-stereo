@@ -195,13 +195,14 @@ int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
             if (convex[i][0] == 0) {
                 if (convex[i][1] > range_size) rs2 = range_size;
                 else rs2 = convex[i][1];
-                large_array = 0;
-                j = 0;
+                large_array = 1;
+                j = rs2 - 1;
                 do {
                     j += rs2 - 1;
                     large_array++;
-                } while (j + rs2 < label_size);
+                } while (j + rs2 - 1 < label_size);
                 large_array++;
+
                 printf("large_array %d\n", large_array);
 
                 for (j = 1; j < large_array; j++) {
@@ -220,18 +221,20 @@ int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
                         n = ss->ls[j][k];
                     }
                 }
-                size = label_max - n;
+                size = label_size - n;
                 if ((ss->ls[large_array] = (int *)malloc(sizeof(int) * size)) == NULL) {
                     fprintf(stderr, "Error!:malloc[main()->ls]\n");
                     exit(EXIT_FAILURE);
                 }
                 printf("size: %d\n", size);
+                printf("n: %d\n", n);
                 ss->ls[large_array][0] = size;
                 ss->ls[large_array][1] = n;
 
                 for (j = 2; ss->ls[large_array][j - 1] + 1 <= label_max; j++) {
                     ss->ls[large_array][j] = ss->ls[large_array][j - 1] + 1;
                     n = ss->ls[large_array][j];
+                    printf("%d ", n);
                 }
                 ss->number++;
                 printf("n: %d\n", n);
@@ -496,14 +499,16 @@ double energy_str(Graph *G, int *label,  double T, int lamda, Image image) {
     int i;
     double energy = 0;
     //* Dterm
-    // for (i = 1; i <= G->n - 2; i++) {
-    //     energy += data_str(i, label[i], image.width, image.left, image.right);
-    //     // energy += data(I_left[i], label[i]);
-    // }
-    // */
+    //*
+    for (i = 1; i <= G->n - 2; i++) {
+        energy += data_str(i, label[i], image.width, image.left, image.right);
+        // energy += data(I_left[i], label[i]);
+    }
+    /*/
     for(int i = 1; i < G->n - 1; i++){
         energy += Dt(label[i], &image, i / image.width, i % image.width);
     }
+    // */
     // Vterm
     for (i = 1; i <= G->m - 2 * (G->n - 2); i++) {
         energy += pairwise(label[G->tail[i]], label[G->head[i]], T, lamda);
@@ -683,8 +688,8 @@ int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image) {
             setEdge(G, edge_count, tail, head, 0);
             if(isin[i]) {
                 // G->capa[edge_count] = data(I_left[i],ls[j]) + nnp_4_grsa(i, j, height, width, ls, label, T, lamda);
-                // G->capa[edge_count] = data_str(ls[j], width, I_left, I_right) + nnp_4_grsa(i, j, height, width, ls, label, T, lamda);
-                G->capa[edge_count] = Dt(ls[j], &image, i / image.width, i % image.width) + near_nodes(i, j, image.height, image.width, ls, label, isin, T, lamda);
+                G->capa[edge_count] = data_str(i, ls[j], image.width, image.left, image.right) + near_nodes(i, j, image.height, image.width, ls, label, isin, T, lamda);
+                // G->capa[edge_count] = Dt(ls[j], &image, i / image.width, i % image.width) + near_nodes(i, j, image.height, image.width, ls, label, isin, T, lamda);
             }
 
             if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
@@ -699,8 +704,8 @@ int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image) {
         setEdge(G, edge_count, i + grids_node * (ls[0] - 1), sink, 0);
         if(isin[i]) {
             // G->capa[edge_count] = data(I_left[i], ls[ls[0]]) + nnp_4_grsa(i, ls[0], height, width, ls, label, T, lamda);
-            // G->capa[edge_count] = data_str(i, ls[ls[0]], image.width, I_left, I_right) + nnp_4_grsa(i, ls[0], image.height, image.width, ls, label, T, lamda);
-            G->capa[edge_count] = Dt(ls[ls[0]], &image, i / image.width, i % image.width) + near_nodes(i, j, image.height, image.width , ls, label, isin, T, lamda);
+            G->capa[edge_count] = data_str(i, ls[ls[0]], image.width, image.left, image.right) + near_nodes(i, j, image.height, image.width , ls, label, isin, T, lamda);
+            // G->capa[edge_count] = Dt(ls[ls[0]], &image, i / image.width, i % image.width) + near_nodes(i, j, image.height, image.width , ls, label, isin, T, lamda);
         }
 
         if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
