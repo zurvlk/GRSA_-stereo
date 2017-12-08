@@ -1,0 +1,243 @@
+T : 4 候補区間: 0 --> 2
+ss->number = 120
+total_ss_count: 120
+submodular subsets: 1, (2) 0 1  end
+submodular subsets: 2, (2) 0 2  end
+submodular subsets: 3, (2) 0 3  end
+submodular subsets: 4, (2) 0 4  end
+submodular subsets: 5, (2) 0 5  end
+submodular subsets: 6, (2) 0 6  end
+submodular subsets: 7, (2) 0 7  end
+submodular subsets: 8, (2) 0 8  end
+submodular subsets: 9, (2) 0 9  end
+submodular subsets: 10, (2) 0 10  end
+submodular subsets: 11, (2) 0 11  end
+submodular subsets: 12, (2) 0 12  end
+submodular subsets: 13, (2) 0 13  end
+submodular subsets: 14, (2) 0 14  end
+submodular subsets: 15, (2) 0 15  end
+submodular subsets: 16, (2) 1 2  end
+submodular subsets: 17, (2) 1 3  end
+submodular subsets: 18, (2) 1 4  end
+submodular subsets: 19, (2) 1 5  end
+submodular subsets: 20, (2) 1 6  end
+submodular subsets: 21, (2) 1 7  end
+submodular subsets: 22, (2) 1 8  end
+submodular subsets: 23, (2) 1 9  end
+submodular subsets: 24, (2) 1 10  end
+submodular subsets: 25, (2) 1 11  end
+submodular subsets: 26, (2) 1 12  end
+submodular subsets: 27, (2) 1 13  end
+submodular subsets: 28, (2) 1 14  end
+submodular subsets: 29, (2) 1 15  end
+submodular subsets: 30, (2) 2 3  end
+submodular subsets: 31, (2) 2 4  end
+submodular subsets: 32, (2) 2 5  end
+submodular subsets: 33, (2) 2 6  end
+submodular subsets: 34, (2) 2 7  end
+submodular subsets: 35, (2) 2 8  end
+submodular subsets: 36, (2) 2 9  end
+submodular subsets: 37, (2) 2 10  end
+submodular subsets: 38, (2) 2 11  end
+submodular subsets: 39, (2) 2 12  end
+submodular subsets: 40, (2) 2 13  end
+submodular subsets: 41, (2) 2 14  end
+submodular subsets: 42, (2) 2 15  end
+submodular subsets: 43, (2) 3 4  end
+submodular subsets: 44, (2) 3 5  end
+submodular subsets: 45, (2) 3 6  end
+submodular subsets: 46, (2) 3 7  end
+submodular subsets: 47, (2) 3 8  end
+submodular subsets: 48, (2) 3 9  end
+submodular subsets: 49, (2) 3 10  end
+submodular subsets: 50, (2) 3 11  end
+submodular subsets: 51, (2) 3 12  end
+submodular subsets: 52, (2) 3 13  end
+submodular subsets: 53, (2) 3 14  end
+submodular subsets: 54, (2) 3 15  end
+submodular subsets: 55, (2) 4 5  end
+submodular subsets: 56, (2) 4 6  end
+submodular subsets: 57, (2) 4 7  end
+submodular subsets: 58, (2) 4 8  end
+submodular subsets: 59, (2) 4 9  end
+submodular subsets: 60, (2) 4 10  end
+submodular subsets: 61, (2) 4 11  end
+submodular subsets: 62, (2) 4 12  end
+submodular subsets: 63, (2) 4 13  end
+submodular subsets: 64, (2) 4 14  end
+submodular subsets: 65, (2) 4 15  end
+submodular subsets: 66, (2) 5 6  end
+submodular subsets: 67, (2) 5 7  end
+submodular subsets: 68, (2) 5 8  end
+submodular subsets: 69, (2) 5 9  end
+submodular subsets: 70, (2) 5 10  end
+submodular subsets: 71, (2) 5 11  end
+submodular subsets: 72, (2) 5 12  end
+submodular subsets: 73, (2) 5 13  end
+submodular subsets: 74, (2) 5 14  end
+submodular subsets: 75, (2) 5 15  end
+submodular subsets: 76, (2) 6 7  end
+submodular subsets: 77, (2) 6 8  end
+submodular subsets: 78, (2) 6 9  end
+submodular subsets: 79, (2) 6 10  end
+submodular subsets: 80, (2) 6 11  end
+submodular subsets: 81, (2) 6 12  end
+submodular subsets: 82, (2) 6 13  end
+submodular subsets: 83, (2) 6 14  end
+submodular subsets: 84, (2) 6 15  end
+submodular subsets: 85, (2) 7 8  end
+submodular subsets: 86, (2) 7 9  end
+submodular subsets: 87, (2) 7 10  end
+submodular subsets: 88, (2) 7 11  end
+submodular subsets: 89, (2) 7 12  end
+submodular subsets: 90, (2) 7 13  end
+submodular subsets: 91, (2) 7 14  end
+submodular subsets: 92, (2) 7 15  end
+submodular subsets: 93, (2) 8 9  end
+submodular subsets: 94, (2) 8 10  end
+submodular subsets: 95, (2) 8 11  end
+submodular subsets: 96, (2) 8 12  end
+submodular subsets: 97, (2) 8 13  end
+submodular subsets: 98, (2) 8 14  end
+submodular subsets: 99, (2) 8 15  end
+submodular subsets: 100, (2) 9 10  end
+submodular subsets: 101, (2) 9 11  end
+submodular subsets: 102, (2) 9 12  end
+submodular subsets: 103, (2) 9 13  end
+submodular subsets: 104, (2) 9 14  end
+submodular subsets: 105, (2) 9 15  end
+submodular subsets: 106, (2) 10 11  end
+submodular subsets: 107, (2) 10 12  end
+submodular subsets: 108, (2) 10 13  end
+submodular subsets: 109, (2) 10 14  end
+submodular subsets: 110, (2) 10 15  end
+submodular subsets: 111, (2) 11 12  end
+submodular subsets: 112, (2) 11 13  end
+submodular subsets: 113, (2) 11 14  end
+submodular subsets: 114, (2) 11 15  end
+submodular subsets: 115, (2) 12 13  end
+submodular subsets: 116, (2) 12 14  end
+submodular subsets: 117, (2) 12 15  end
+submodular subsets: 118, (2) 13 14  end
+submodular subsets: 119, (2) 13 15  end
+submodular subsets: 120, (2) 14 15  end
+----------------------------------------------
+input_file: input/tsukuba_
+output_file: output/tsukuba_2_2.bmp
+label_size: 16
+range_size: 2
+lambda: 2
+T: 4.00
+Vpq(fp, fq) = (fp - fq)^2
+Energy (before): 100595
+Energy (after): 27877
+Italation: 1200
+Run time[346.00]
+Error rate : 14.935077
+----------------------------------------------
+T : 9 候補区間: 0 --> 3
+large_array 8
+size: 2
+n: 14
+15 n: 15
+ss->number = 8
+total_ss_count: 8
+submodular subsets: 1, (3) 0 1 2  end
+submodular subsets: 2, (3) 2 3 4  end
+submodular subsets: 3, (3) 4 5 6  end
+submodular subsets: 4, (3) 6 7 8  end
+submodular subsets: 5, (3) 8 9 10  end
+submodular subsets: 6, (3) 10 11 12  end
+submodular subsets: 7, (3) 12 13 14  end
+submodular subsets: 8, (2) 14 15  end
+----------------------------------------------
+input_file: input/tsukuba_
+output_file: output/tsukuba_2_3.bmp
+label_size: 16
+range_size: 3
+lambda: 2
+T: 9.00
+Vpq(fp, fq) = (fp - fq)^2
+Energy (before): 100595
+Energy (after): 34454
+Italation: 40
+Run time[34.18]
+Error rate : 20.034903
+----------------------------------------------
+T : 16 候補区間: 0 --> 4
+large_array 6
+size: 1
+n: 15
+n: 15
+ss->number = 6
+total_ss_count: 6
+submodular subsets: 1, (4) 0 1 2 3  end
+submodular subsets: 2, (4) 3 4 5 6  end
+submodular subsets: 3, (4) 6 7 8 9  end
+submodular subsets: 4, (4) 9 10 11 12  end
+submodular subsets: 5, (4) 12 13 14 15  end
+submodular subsets: 6, (1) 15  end
+----------------------------------------------
+input_file: input/tsukuba_
+output_file: output/tsukuba_2_4.bmp
+label_size: 16
+range_size: 4
+lambda: 2
+T: 16.00
+Vpq(fp, fq) = (fp - fq)^2
+Energy (before): 100595
+Energy (after): 30612
+Italation: 50
+Run time[86.23]
+Error rate : 18.651440
+----------------------------------------------
+T : 25 候補区間: 0 --> 5
+large_array 4
+size: 4
+n: 12
+13 14 15 n: 15
+ss->number = 4
+total_ss_count: 4
+submodular subsets: 1, (5) 0 1 2 3 4  end
+submodular subsets: 2, (5) 4 5 6 7 8  end
+submodular subsets: 3, (5) 8 9 10 11 12  end
+submodular subsets: 4, (4) 12 13 14 15  end
+----------------------------------------------
+input_file: input/tsukuba_
+output_file: output/tsukuba_2_5.bmp
+label_size: 16
+range_size: 5
+lambda: 2
+T: 25.00
+Vpq(fp, fq) = (fp - fq)^2
+Energy (before): 100595
+Energy (after): 28440
+Italation: 40
+Run time[136.40]
+Error rate : 18.161350
+----------------------------------------------
+T : 36 候補区間: 0 --> 6
+large_array 4
+size: 1
+n: 15
+n: 15
+ss->number = 4
+total_ss_count: 4
+submodular subsets: 1, (6) 0 1 2 3 4 5  end
+submodular subsets: 2, (6) 5 6 7 8 9 10  end
+submodular subsets: 3, (6) 10 11 12 13 14 15  end
+submodular subsets: 4, (1) 15  end
+----------------------------------------------
+input_file: input/tsukuba_
+output_file: output/tsukuba_2_6.bmp
+label_size: 16
+range_size: 6
+lambda: 2
+T: 36.00
+Vpq(fp, fq) = (fp - fq)^2
+Energy (before): 100595
+Energy (after): 24744
+Italation: 18
+Run time[114.30]
+Error rate : 18.596282
+----------------------------------------------
