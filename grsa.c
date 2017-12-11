@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <float.h>
 #include <string.h>
-// #include <math.h>
+#include <math.h>
 
 #define INF DBL_MAX
 #define _CONSIDE_ALL_PAIRS_ 0
@@ -99,6 +99,9 @@ int mpair(int i, int j, int label_size) {
     res += j - 2 * c;
     return res;
 }
+
+
+
 
 int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
     int i, j, k, l, m, n, prev, rs2, current_array, large_array, size;
@@ -330,25 +333,25 @@ void readStrBitmap(Image *image, char filename[], int scale) {
     strcat(imgleft, "left.bmp");
     strcat(imgright, "right.bmp");
     strcat(imgtruth, "truth.bmp");
+    
+    ReadBmp(imgleft, (image->raw_left));
+    ReadBmp(imgright, (image->raw_right));
+    ReadBmp(imgtruth, (image->truth));
+    ReadBmp(imgtruth, (image->output));
 
-    ReadBmp(imgleft, &(image->raw_left));
-    ReadBmp(imgright, &(image->raw_right));
-    ReadBmp(imgtruth, &(image->truth));
-    ReadBmp(imgtruth, &(image->output));
-
-    image->width = image->raw_left.width;
-    image->height = image->raw_left.height;
+    image->width = image->raw_left->width;
+    image->height = image->raw_left->height;
     image->scale = scale;
     grids_node = image->height * image->width;
 
-    if(image->width != image->raw_right.width || image->height != image->raw_right.height) {
+    if(image->width != image->raw_right->width || image->height != image->raw_right->height) {
         fprintf(stderr, "Error %s と %s の解像度が異なります\n", imgleft, imgright);
         exit(EXIT_FAILURE);
     }
 
-    Gray(&(image->raw_left), &(image->raw_left));
-    Gray(&(image->raw_right), &(image->raw_right));
-    Gray(&(image->truth), &(image->truth));
+    Gray((image->raw_left), (image->raw_left));
+    Gray((image->raw_right), (image->raw_right));
+    Gray((image->truth), (image->truth));
 
 
     if ((image->left = (int *)malloc(sizeof(int) * (grids_node + 1))) == NULL) {
@@ -362,12 +365,12 @@ void readStrBitmap(Image *image, char filename[], int scale) {
 
     for (i = 0; i <  image->height; i++) {
         for (j = 0; j < image->width; j++) {
-            image->left[i * image->width + j + 1] = image->raw_left.data[i][j].r / scale;
+            image->left[i * image->width + j + 1] = image->raw_left->data[i][j].r / scale;
         }
     }
     for (i = 0; i <  image->height; i++) {
         for (j = 0; j < image->width; j++) {
-            image->right[i * image->width + j + 1] = image->raw_right.data[i][j].r / scale;
+            image->right[i * image->width + j + 1] = image->raw_right->data[i][j].r / scale;
         }
     }
 
@@ -404,6 +407,64 @@ double between(double a, double b, double c){
     else return 1;
 }
 
+double D_function(int x, img *tmpL, img *tmpR, int h, int w, int maxLabel) {
+
+	int q = w - x;
+	double Ip, Iq, Ip_l, Ip_r, Iq_r, Iq_l, fwd, rev;
+
+	if ( (x < 0) || (x > maxLabel) || q < 0 ) { return INF; }
+
+	Ip = tmpL->data[h][w].r;
+	Iq = tmpR->data[h][q].r;
+
+	if ( !q )
+	{
+		Iq_l = INF;
+		Iq_r = (Iq + tmpR->data[h][q + 1].r) / 2.0;
+		if( between(Iq, Ip, Iq_r) ) { return 0; }
+	}
+	else if ( (q + 1) == tmpR->width )
+	{
+		Iq_l = (Iq + tmpR->data[h][q - 1].r) / 2.0;
+		Iq_r = INF;
+		if( between(Iq_l, Ip, Iq) ) { return 0; }
+	}
+	else
+	{
+		Iq_r = (Iq + tmpR->data[h][q + 1].r) / 2.0;
+		Iq_l = (Iq + tmpR->data[h][q - 1].r) / 2.0;
+		if( between(Iq_r, Ip, Iq) ) { return 0; }
+		if( between(Iq_l, Ip, Iq) ) { return 0; }
+	}
+
+	fwd = fmin3( fabs(Ip - Iq_l), fabs(Ip - Iq), fabs(Ip - Iq_r) );
+
+	if( !w )
+	{
+		Ip_l = INF;
+		Ip_r = (Ip + tmpL->data[h][w + 1].r) / 2.0;
+		if( between(Ip, Iq, Ip_r) ) { return 0; }
+	}
+	else if ( (w + 1) == tmpL->width )
+	{
+		Ip_l = (Ip + tmpL->data[h][w - 1].r) / 2.0;
+		Ip_r = INF;
+		if( between(Ip_l, Iq, Ip) ) { return 0; }
+	}
+	else
+	{
+		Ip_l = (Ip + tmpL->data[h][w - 1].r) / 2.0;
+		Ip_r = (Ip + tmpL->data[h][w + 1].r) / 2.0;
+		if( between(Ip_l, Iq, Ip) ) { return 0; }
+		if( between(Ip_r, Iq, Ip) ) { return 0; }
+	}
+
+	rev = fmin3( fabs(Ip_l - Iq), fabs(Ip - Iq), fabs(Ip_r - Iq) );
+
+	return pow( fmin3(fwd, rev, 20), 1 ); // const = 20
+}
+
+
 double Dt(int x, Image *image, int i, int j) {
     double d_m, d_l, d_r, d_m2, d_l2, d_r2;
     double  I, I_1 = 0, I_2 = 0;
@@ -414,47 +475,47 @@ double Dt(int x, Image *image, int i, int j) {
     int flag = 1;
     while(flag){
 
-	    d_m = image->raw_left.data[i][j].r;
-	    d_m2 =  image->raw_right.data[i][j - x].r;
+	    d_m = image->raw_left->data[i][j].r;
+	    d_m2 =  image->raw_right->data[i][j - x].r;
 
-	    if((j - x - 1 >= 0) && (j - x + 1 <= image->raw_right.width - 1)){
+	    if((j - x - 1 >= 0) && (j - x + 1 <= image->raw_right->width - 1)){
 
-	        d_l2 = (image->raw_right.data[i][j - x].r + image->raw_right.data[i][j - x - 1].r) / 2.0;
-            d_r2 = (image->raw_right.data[i][j - x].r + image->raw_right.data[i][j - x + 1].r) / 2.0;
+	        d_l2 = (image->raw_right->data[i][j - x].r + image->raw_right->data[i][j - x - 1].r) / 2.0;
+            d_r2 = (image->raw_right->data[i][j - x].r + image->raw_right->data[i][j - x + 1].r) / 2.0;
 	        if(between(d_l2, d_m, d_m2) == 0)    break;
 	        if(between(d_r2, d_m, d_m2) == 0)    break;
 	        I_1 = fmin3(abss(d_m - d_l2), abss(d_m - d_m2), abss(d_m - d_r2));              /*特に制約なし*/
 
 	    }else if(j - x - 1 < 0){
 
-	        d_r2 = (image->raw_right.data[i][j - x].r + image->raw_right.data[i][j - x + 1].r) / 2.0;
+	        d_r2 = (image->raw_right->data[i][j - x].r + image->raw_right->data[i][j - x + 1].r) / 2.0;
 	        if(between(d_m2, d_m, d_r2) == 0)    break;
 	        I_1 = fmin(abss(d_m - d_m2), abss(d_m - d_r2));                                /*Rの左端が出る*/
 
 	    }else{
 
-	        d_l2 = (image->raw_right.data[i][j - x].r + image->raw_right.data[i][j - x - 1].r) / 2.0;
+	        d_l2 = (image->raw_right->data[i][j - x].r + image->raw_right->data[i][j - x - 1].r) / 2.0;
 	        if(between(d_l2, d_m, d_m2) == 0)    break;
 	        I_1 = fmin(abss(d_m - d_l2), abss(d_m - d_m2));                                /*Rの右端が出る*/
 	    }
 
-	    if((j != 0) && (j != image->raw_left.width - 1)){
+	    if((j != 0) && (j != image->raw_left->width - 1)){
 
-	        d_l = (image->raw_left.data[i][j].r + image->raw_left.data[i][j - 1].r) / 2.0;
-	        d_r = (image->raw_left.data[i][j].r + image->raw_left.data[i][j + 1].r) / 2.0;
+	        d_l = (image->raw_left->data[i][j].r + image->raw_left->data[i][j - 1].r) / 2.0;
+	        d_r = (image->raw_left->data[i][j].r + image->raw_left->data[i][j + 1].r) / 2.0;
 	        if(between(d_l, d_m2, d_m) == 0)    break;
 	        if(between(d_r, d_m2, d_m) == 0)    break;
 	        I_2 = fmin3(abss(d_l - d_m2), abss(d_m - d_m2), abss(d_r - d_m2));              /*特に制約なし*/
 
 	    }else if(j == 0){
 
-	        d_r = (image->raw_left.data[i][j].r + image->raw_left.data[i][j + 1].r) / 2.0;
+	        d_r = (image->raw_left->data[i][j].r + image->raw_left->data[i][j + 1].r) / 2.0;
 	        if(between(d_m, d_m2, d_r) == 0)    break;
 	        I_2 = fmin(abss(d_m - d_m2), abss(d_r - d_m2));                                /*Lの左端が出る*/
 
 	    }else{
 
-	        d_l = (image->raw_left.data[i][j].r + image->raw_left.data[i][j - 1].r) / 2.0;
+	        d_l = (image->raw_left->data[i][j].r + image->raw_left->data[i][j - 1].r) / 2.0;
 	        if(between(d_l, d_m2, d_m) == 0)    break;
 	        I_2 = fmin(abss(d_l - d_m2), abss(d_m - d_m2));                                /*Lの右端が出る*/
 	    }
@@ -483,18 +544,19 @@ double energy(Graph *G, int *label, int *I, double T, int lamda) {
     return energy;
 }
 
-double energy_str(Graph *G, int *label,  double T, int lamda, Image image) {
+double energy_str(Graph *G, int *label,  double T, int lamda, int height, int width, int label_max, int *left, int *right, img *raw_left, img *raw_right) {
     int i;
     double energy = 0;
     //* Dterm
     if (dterm == 1) {
         for (i = 1; i <= G->n - 2; i++) {
-            energy += data_str(i, label[i], image.width, image.left, image.right);
+            energy += data_str(i, label[i], width, left, right);
         // energy += data(I_left[i], label[i]);
         }
     } else {
         for(int i = 1; i < G->n - 1; i++) {
-            energy += Dt(label[i], &image, i / image.width, i % image.width);
+            // energy += Dt(label[i], &image, i / image.width, i % image.width);
+            energy = D_function(label[i], raw_left, raw_right, height, width, label_max);
         }
     }
     
@@ -827,24 +889,24 @@ int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image) {
     return edge_count - 1;
 }
 
-double err_rate(img output, Image image) {
+double err_rate(img *output, Image image) {
     int i, error_count = 0;
     double err;
     //     // Gray(&truth, &truth);
     //     Gray(&(image.output), &(image.output));
 
-    if (image.truth.data[0][0].r) {
-        for(i = 1; i <= (image.output.height) * (image.output.width); i++) {
-            if (abs(image.output.data[(i - 1) / image.output.width][(i - 1) % image.output.width].r - image.truth.data[(i - 1) / image.truth.width][(i - 1) % image.truth.width].r )
+    if (image.truth->data[0][0].r) {
+        for(i = 1; i <= (image.output->height) * (image.output->width); i++) {
+            if (abs(image.output->data[(i - 1) / image.output->width][(i - 1) % image.output->width].r - image.truth->data[(i - 1) / image.truth->width][(i - 1) % image.truth->width].r )
                 >= image.scale + 1) {
                 error_count++;
             }
         }
     } else {
-        for(i = 1; i <= (image.output.height) * (image.output.width); i++) {
-            if ((i - 1) / image.output.width >= image.scale && (i - 1) % image.output.width >= image.scale &&
-                (i - 1) / image.output.width <= image.output.height - image.scale && (i - 1) % image.output.width <= image.output.width - image.scale) {
-                if (abs(image.output.data[(i - 1) / image.output.width][(i - 1) % image.output.width].r - image.truth.data[(i - 1) / image.truth.width][(i - 1) % image.truth.width].r )
+        for(i = 1; i <= (image.output->height) * (image.output->width); i++) {
+            if ((i - 1) / image.output->width >= image.scale && (i - 1) % image.output->width >= image.scale &&
+                (i - 1) / image.output->width <= image.output->height - image.scale && (i - 1) % image.output->width <= image.output->width - image.scale) {
+                if (abs(image.output->data[(i - 1) / image.output->width][(i - 1) % image.output->width].r - image.truth->data[(i - 1) / image.truth->width][(i - 1) % image.truth->width].r )
                     >= image.scale + 1) {
                     error_count++;
                 }
@@ -852,6 +914,6 @@ double err_rate(img output, Image image) {
         }
     }
 
-    err = 100 * error_count / (double)(image.truth.height * image.truth.width);
+    err = 100 * error_count / (double)(image.truth->height * image.truth->width);
     return err;
 }

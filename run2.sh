@@ -6,13 +6,13 @@ result=`date +%Y%m%d_%H-%M-%S`.log
 echo "---GRSA---"
 for dterm in 0 1
 do
-    for lambda in 1 2 3 4 5 6 7 
+    for lambda in 2 
     do
         for T in  2 3 4 5 6 7 8
         do
         # range_size <= label_size
             job_start=`date +%s`
-            ./grsa input/tsukuba_ output/ab_tsukuba_${dterm}_${lambda}_${T}.bmp ${T} 16 $lambda ${dterm} >>  log/${dterm}_lambda_${lambda}_tsukuba${result}
+            ./grsa3 input/tsukuba_ output/ab_tsukuba_${dterm}_${lambda}_${T}.bmp ${T} 16 $lambda ${dterm} >>  log/ab_${dterm}_lambda_${lambda}_tsukuba${result}
             job_end=`date +%s`
             time=$((job_end - job_start));
             count=`expr $count + 1`
@@ -24,25 +24,25 @@ do
     done
 done
 
-# for dterm in 0 1
-# do
-#     for lambda in 1 2 3 4 5 6
-#     do
-#         for T in 2 3 4 5 6 7 8
-#         do
-#         # range_size <= label_size
-#             job_start=`date +%s`
-#             ./grsa input/venus_ output/venus_${dterm}_${lambda}_${T}.bmp $T 8 $lambda ${dterm} >> log/${dterm}_lambda_${lambda}_venus${result}
-#             job_end=`date +%s`
-#             time=$((job_end - job_start));
-#             count=`expr $count + 1`
-#             echo "venus T=${T}, lambda=${lambda} [${time}s]";
-#         done
-#         git add log/${dterm}_lambda_${lambda}_venus${result}
-#         git commit -m "job_${result}"
-#         git push origin master
-#     done
-# done
+for dterm in 0 1
+do
+    for lambda in 7
+    do
+        for T in 2 3 4 5 6 7 8
+        do
+        # range_size <= label_size
+            job_start=`date +%s`
+            ./grsa3 input/venus_ output/ab_venus_${dterm}_${lambda}_${T}.bmp $T 8 $lambda ${dterm} >> log/ab_${dterm}_lambda_${lambda}_venus${result}
+            job_end=`date +%s`
+            time=$((job_end - job_start));
+            count=`expr $count + 1`
+            echo "venus T=${T}, lambda=${lambda} [${time}s]";
+        done
+        git add log/${dterm}_lambda_${lambda}_venus${result}
+        git commit -m "job_${result}"
+        git push origin master
+    done
+done
 
 # for dterm in 0 1
 # do

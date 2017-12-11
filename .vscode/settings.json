@@ -2,7 +2,8 @@
     "files.associations": {
         "bmp.h": "c",
         "grsa.h": "c",
-        "math.h": "c"
+        "math.h": "c",
+        "typeinfo": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

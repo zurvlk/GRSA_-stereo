@@ -2,18 +2,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <float.h>
 // #include <math.h>
 #include "bmp.h"
 #include "grsa.h"
 #include "graph.h"
 #include "ford_fulkerson.h"
-#include "malloc.h"
-#include <float.h>
+
+
+
 #define INF DBL_MAX
-
-/*
-
-*/
 
 #define _OUTPUT_T_ 0     // BK-maxflow後のtの状態をファイルに出力 0:出力しない 1:出力する
 #define _OUTPUT_INFO_ 0     // デバッグ情報出力 0:出力しない 1:出力する
@@ -23,12 +21,10 @@
 #define _SHOW_EACH_ENERGY_ 0 // 各移動時にエネルギー表示
 #define _OUTPUT_SUBMODULAR_SUBSETS_ 1
 
-
 int main(int argc, char *argv[]) {
-    int i, j, k, node, edge, grids_node, flag;
-    int scale, grids_edge, count, last_move, ci, total_ss_count;
-    int *t, *label, *newlabel, *label_index;
-    // I->入力画像の輝度, t->2値変数, label->ラベル付け
+    int i, j, k, node, edge, grids_node, flag, height, width;
+    int scale, grids_edge, count, last_move, ci, total_ss_count, label_max;
+    int *t, *label, *newlabel, *label_index, *left, *right;
     int label_size = 16;
     int range_size = 4;
     int errlog = 0;
@@ -36,32 +32,58 @@ int main(int argc, char *argv[]) {
     double decreace, prev_energy, before_energy, new_energy, err,  T = INF;
     double *f;
     char output_file[100];
+    char imgleft[100];
+    char imgright[100];
+    char imgtruth[100];
     clock_t start;
     // Ge:エネルギー計算用
     Graph G, Ge;
-    Image image;
     Subsets ss;
-
-#if _OUTPUT_T_
-    FILE *fp;
-    fp = fopen("log/t.txt", "w");
-    if (fp == NULL) {
-        fprintf(stderr, "cannot open file[t.txt]\n");
-        exit (EXIT_FAILURE);
-    }
-#endif
+    img *raw_left, *raw_right, *truth, *output;
+    
 #if _OUTPUT_PROGRESS_
     int l = 0;
     char pf[100];
     system("rm output/*.bmp &> /dev/null");
 #endif
+
     dterm = 0;
     function = 1;
     if (argc != 2 && argc != 3 && argc != 5 && argc != 6 && argc != 7 && argc != 8) {
         printf("Usage: %s <input_file> <output_file(option)> <range_size(option)> <scale(option)> <lamda (option)>  <Dterm 0: Dt, 1:normal(option)> <T (option)>\n", argv[0]);
-        return 1;
+        return (EXIT_FAILURE);
     }
-    printf("argc == %d\n", argc);
+
+    // Read Bitmap
+    raw_left = (img *)malloc(sizeof(img));
+    raw_right = (img *)malloc(sizeof(img));
+    output = (img *)malloc(sizeof(img));
+    truth = (img *)malloc(sizeof(img));
+
+    strcpy(imgleft, argv[1]);
+    strcpy(imgright, argv[1]);
+    strcpy(imgtruth, argv[1]);
+
+    strcat(imgleft, "left.bmp");
+    strcat(imgright, "right.bmp");
+    strcat(imgtruth, "truth.bmp");
+    
+    ReadBmp(imgleft, raw_left);
+    ReadBmp(imgright, raw_right);
+    ReadBmp(imgtruth, truth);
+    ReadBmp(imgtruth, output);
+
+    if(raw_left->width != raw_right->width || raw_left->height != raw_right->height) {
+        fprintf(stderr, "Error %s と %s の解像度が異なります\n", imgleft, imgright);
+        exit(EXIT_FAILURE);
+    }
+
+    Gray(raw_left, raw_left);
+    Gray(raw_right, raw_right);
+    Gray(truth, truth);
+
+    height = raw_left->height;
+    width = raw_left->width;
 
     if (argc == 2) strcpy(output_file, "/dev/null");
     else strcpy(output_file, argv[2]);
@@ -79,7 +101,7 @@ int main(int argc, char *argv[]) {
     }
 
     label_size = 256 / scale;
-    image.label_max = label_size - 1;
+    label_max = label_size - 1;
     if (range_size < 2) {
         fprintf(stderr, "Error! Range size == %d \n", range_size);
         exit (EXIT_FAILURE);
@@ -89,11 +111,37 @@ int main(int argc, char *argv[]) {
         exit (EXIT_FAILURE);
     }
 
+    grids_node = height * width;
+
+    if ((left = (int *)malloc(sizeof(int) * (grids_node + 1))) == NULL) {
+        fprintf(stderr, "Error!:malloc[main() int *left]\n");
+        exit(EXIT_FAILURE);
+    }
+    if ((right = (int *)malloc(sizeof(int) * (grids_node + 1))) == NULL) {
+        fprintf(stderr, "Error!:malloc[main() int *right]\n");
+        exit(EXIT_FAILURE);
+    }
+
+    for (i = 0; i <  height; i++) {
+        for (j = 0; j < width; j++) {
+            left[i * width + j + 1] = raw_left->data[i][j].r / scale;
+        }
+    }
+    for (i = 0; i <  height; i++) {
+        for (j = 0; j < width; j++) {
+            right[i * width + j + 1] = raw_right->data[i][j].r / scale;
+        }
+    }
+    
+
+    
+    
+
     T = theta(range_size, INF);
     ss.T = T;
     // ccvex 凸区間の数(count of convex)
     total_ss_count = gen_submodular_subsets(label_size, range_size, &ss);
-    readStrBitmap(&image, argv[1], scale);
+    
     printf("submodular subsets: \n");
     for (i = 1; i <= total_ss_count; i++) {
         if (ss.ls[i][0] != 1) {
@@ -117,16 +165,12 @@ int main(int argc, char *argv[]) {
     else printf("normal\n");
     if(theta(2, 2 * 2) > 2) printf("Vpq(fp, fq) = (fp - fq)^2\n");
     else printf("Vpq(fp, fq) = |fp - fq|\n");
-
-    grids_node = image.height * image.width;
-
     // エネルギー計算用一層グラフ作成
     node = grids_node + 2;
-    edge = (image.height - 1) * image.width + image.height * (image.width - 1) + 2 * grids_node;
+    edge = (height - 1) * width + height * (width - 1) + 2 * grids_node;
     newGraph(&Ge, node, edge);
 
-    // set_single_edge(&Ge, image.height, image.width);
-    set_single_edges(&Ge, image.height, image.width);
+    set_single_edges(&Ge, height, width);
     initAdjList(&Ge);
 
     if ((label = (int *) malloc(sizeof(int) * (grids_node + 1))) == NULL) {
@@ -143,9 +187,9 @@ int main(int argc, char *argv[]) {
     }
 
     // 輝度から初期ラベル設定
-    for (i = 1; i <= grids_node ; i++) label[i] = 0;
+    for (i = 1; i <= grids_node ; i++) label[i] = 5;
     cpyarray(newlabel, label, grids_node);
-    prev_energy = energy_str(&Ge, label, T, lamda, image);
+    prev_energy = energy_str(&Ge, label,  T, lamda, height, width, label_max, left, right, raw_left, raw_right);
     printf("Energy (before): %.0lf\n", prev_energy);
 
 
@@ -167,6 +211,9 @@ int main(int argc, char *argv[]) {
     }
 
 #endif
+}
+
+/* 
 
     last_move = total_ss_count + 1;
     decreace = 0;
@@ -214,8 +261,8 @@ int main(int argc, char *argv[]) {
             //     printf("%d ", ss.ls[i][j]);
             // }
             // printf(" end\n");
-            node = image.height * image.width * ss.ls[i][0] + 2;
-            grids_edge = (image.height - 1) * image.width + image.height * (image.width - 1);
+            node = height * width * ss.ls[i][0] + 2;
+            grids_edge = (height - 1) * width + height * (width - 1);
             edge = 2 * grids_node * ss.ls[i][0] + 2 * grids_edge * (ss.ls[i][0] - 1) * ((ss.ls[i][0] - 1));
 
             newGraph(&G, node, edge);
@@ -282,9 +329,9 @@ int main(int argc, char *argv[]) {
 #if _OUTPUT_PROGRESS_
             for (j = 0; j <  image.height; j++) {
                 for (k = 0; k < image.width; k++) {
-                    image.output.data[j][k].r = label[j * image.width + k + 1] * scale;
-                    image.output.data[j][k].g = image.output.data[j][k].r;
-                    image.output.data[j][k].b = image.output.data[j][k].r;
+                    image.output->data[j][k].r = label[j * image.width + k + 1] * scale;
+                    image.output->data[j][k].g = image.output->data[j][k].r;
+                    image.output->data[j][k].b = image.output->data[j][k].r;
                 }
             }
             sprintf(pf, "output/left_%04d.bmp", l);
@@ -324,12 +371,12 @@ int main(int argc, char *argv[]) {
     // output to bitmap file
     for (i = 0; i <  image.height; i++) {
         for (j = 0; j < image.width; j++) {
-            image.output.data[i][j].r = label[i * image.width + j + 1] * scale;
-            image.output.data[i][j].g = image.output.data[i][j].r;
-            image.output.data[i][j].b = image.output.data[i][j].r;
+            image.output->data[i][j].r = label[i * image.width + j + 1] * scale;
+            image.output->data[i][j].g = image.output->data[i][j].r;
+            image.output->data[i][j].b = image.output->data[i][j].r;
         }
     }
-    WriteBmp(output_file, &image.output);
+    WriteBmp(output_file, image.output);
 
 #if _OUTPUT_T_
     fprintf(fp, "Energy (after): %lf\n", energy_str(&Ge, label, T, lamda, image));
@@ -339,9 +386,9 @@ int main(int argc, char *argv[]) {
     if(errlog) printf("エネルギーが増大する移動が確認されました\n");
 
     if (strcmp(output_file, "/dev/null") != 0){
-        ReadBmp(output_file, &(image.output));
+        ReadBmp(output_file, (image.output));
         // Gray(&truth, &truth);
-        Gray(&(image.output), &(image.output));
+        Gray((image.output), (image.output));
         err = err_rate(image.output, image);
         printf("Error rate : %lf\n", err);
     }
@@ -372,5 +419,6 @@ int main(int argc, char *argv[]) {
 
     printf("----------------------------------------------\n");
     return 0;
+ // */
 
-}
+

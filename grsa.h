@@ -2,10 +2,10 @@
 #include "bmp.h"
 
 typedef struct __INPUT_BITMAPS__ {
-    img raw_left;
-    img raw_right;
-    img truth;
-    img output;
+    img *raw_left;
+    img *raw_right;
+    img *truth;
+    img *output;
     int *left;
     int *right;
     int width;
@@ -29,7 +29,7 @@ int nc2(int n);
 double theta(double n, double T);
 double p(int *label, int height, int width);
 double energy(Graph *G, int *label, int *I, double T, int lamda);
-double energy_str(Graph *G, int *label, double T, int lamda, Image image);
+double energy_str(Graph *G, int *label,  double T, int lamda, int height, int width, int label_max, int *left, int *right, img *raw_left, img *raw_right);
 double pairwise(double i, double j, double T, int lamda);
 double data(int i, int label);
 int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image);
@@ -40,4 +40,4 @@ int make_label_index(Graph *G, int *label, int *label_index, int alpha, int beta
 void set_single_edges(Graph *G, int height, int width);
 int cmparray(int *array1, int *array2, int size);
 void cpyarray(int *terget, int *source, int size);
-double err_rate(img output, Image image);
+double err_rate(img *output, Image image);
