@@ -56,7 +56,7 @@ long Bmp_yppm;                         /* ��ľ������ (ppm) */
 void ReadBmp(char *filename, img *imgp) {
   int i,j;
   int Real_width;
-  FILE *Bmp_Fp=fopen(filename,"rb");	/* �Х��ʥ��⡼���ɤ߹����Ѥ˥����ץ� */
+  FILE *Bmp_Fp=fopen(filename,"rb");	/* �Х��ʥ�⡼���ɤ߹����Ѥ˥����ץ� */
   unsigned char *Bmp_Data;						/* �����ǡ�����1��ʬ��Ǽ */
 
   if(Bmp_Fp==NULL){
@@ -66,10 +66,11 @@ void ReadBmp(char *filename, img *imgp) {
 
   /* �إå��ɤ߹��� */
   fread(Bmp_headbuf,sizeof(unsigned char),HEADERSIZE,Bmp_Fp);
-
+        
 	memcpy(&Bmp_type, Bmp_headbuf, sizeof(Bmp_type));
 
-	if (strncmp(Bmp_type, "BM", 2) != 0){
+	if (strncmp(Bmp_type, "BM", 2) != 0)
+	{
 		fprintf(stderr,"Error: %s is not a bmp file.\n",filename);
 		exit(1);
 	}
@@ -96,15 +97,15 @@ void ReadBmp(char *filename, img *imgp) {
 		exit(1);
 	}
 
-	Real_width = imgp->width*3 + imgp->width%4; /* 4byte �����ˤ��碌�뤿���˼ºݤ����η׻� */
+	Real_width = imgp->width*3 + imgp->width%4; /* 4byte �����ˤ��碌�뤿��˼ºݤ����η׻� */
 
-	/* �����ΰ���ưŪ����. ���Ԥ��������ϥ��顼���å����������Ϥ��ƽ�λ */
+	/* �����ΰ��ưŪ����. ���Ԥ������ϥ��顼��å���������Ϥ��ƽ�λ */
 	if ((Bmp_Data = (unsigned char *)calloc(Real_width, sizeof(unsigned char))) == NULL)
 	{
 		fprintf(stderr,"Error: Memory allocation failed for Bmp_Data!\n");
 		exit(1);
-	}
-
+	}           
+ 
   /* �����ǡ����ɤ߹��� */
 	for(i=0;i<imgp->height;i++)
 	{
@@ -117,11 +118,11 @@ void ReadBmp(char *filename, img *imgp) {
 		}
 	}
 
-  /* ưŪ�˳��ݤ��������ΰ��β��� */
+  /* ưŪ�˳��ݤ��������ΰ�β��� */
   free(Bmp_Data);
 
-  /* �ե����륯������ */
-  fclose(Bmp_Fp);
+  /* �ե����륯���� */
+  fclose(Bmp_Fp); 
 }
 
 /*

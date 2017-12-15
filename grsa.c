@@ -8,7 +8,8 @@
 #include <math.h>
 
 #define INF DBL_MAX
-#define _CONSIDE_ALL_PAIRS_ 0
+// #define INF 10000000
+#define _CONSIDE_ALL_PAIRS_ 1
 
 double dabs(double a, double b) {
     return a - b > 0 ? a - b : b - a;
@@ -33,7 +34,6 @@ double fmax(double i, double j) {
     return i > j ? i : j;
 }
 double theta(double n, double T) {
-
 
     if(!function) return fmin(n > 0 ? n : -n, T);
     else return fmin(n * n, T);
@@ -217,7 +217,7 @@ int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
                     if(j != 1) ss->ls[j][1] = ss->ls[j - 1][rs2];
                     else ss->ls[j][1] = 0;
                     for (k = 2; k <= rs2; k++) {
-                        //segmentation faultT, lamda);
+                        //segmentation faultT, lambda);
                         // printf("%d, %d\n", j, k);
                         ss->ls[j][k] = ss->ls[j][k - 1] + 1;
                         n = ss->ls[j][k];
@@ -377,8 +377,56 @@ void readStrBitmap(Image *image, char filename[], int scale) {
 }
 
 
-double pairwise(double i, double j, double T, int lamda) {
-    return lamda * theta(i - j, T);
+double pairwise(double i, double j, double T, int lambda) {
+    return lambda * theta(i - j, T);
+}
+
+double g_function(int x) //平滑化項の関数内の関数
+{
+	if (dterm == 1) return abs(x);
+	else return x*x;
+}
+
+double V_function(int x, int y, int T, double w) //平滑化項の関数
+{
+    double ans;
+    if (dterm == 1) ans = abs(x - y);
+	else ans = (x - y) * (x - y);
+
+    ans = w * fmin(ans, T);
+    return ans;
+}
+
+
+
+double V_energy(int *label, int height, int width, int T, double w) //エネルギー関数の平滑化項のエネルギー 
+{
+
+    int grids_node = height * width; 
+	double v = 0;
+    int i, j;
+    int number = 0;
+    for(i = 0; i < height - 1; i++)
+	{
+		for(j = 0; j < width - 1; j++)
+		{
+			number++;	                                 
+			v += V_function(label[number], label[number + 1], T, w);     
+			//printf("V_yoko : ans = %lf\n",ans);
+			v += V_function(label[number], label[number + width], T, w);
+			//printf("V_tate : ans = %lf\n",ans);
+		}
+		number++;
+		v += V_function(label[number], label[number + width], T, w);
+		//printf("V_tate : ans = %lf\n",ans);
+	}
+	for(i = 0; i < width - 1; i++)
+	{
+		number++;
+		v += V_function(label[number], label[number + 1], T, w);
+		//printf("V_tate : ans = %lf\n",ans);		
+	}
+	return v;	
 }
 
 double data(int i, int label) {
@@ -401,11 +449,17 @@ double data_str(int i, int label, int width, int *I_left, int *I_right) {
 }
 
 
-
+/*
 double between(double a, double b, double c){
     if((a <= b && b <= c) || (c <= b && b <= a))    return 0;
     else return 1;
 }
+/*/
+int between(double a, double b, double c) {
+    if (( isgreater(b, a) && isgreater(b, c) ) || ( isless(b, a) && isless(b, c))) return 0;
+    else return 1;
+}
+// */
 
 double D_function(int x, img *tmpL, img *tmpR, int h, int w, int maxLabel) {
 
@@ -460,9 +514,10 @@ double D_function(int x, img *tmpL, img *tmpR, int h, int w, int maxLabel) {
 	}
 
 	rev = fmin3( fabs(Ip_l - Iq), fabs(Ip - Iq), fabs(Ip_r - Iq) );
-
+    if (fmin3(fwd, rev, 20) < 0) printf("error\n");
 	return pow( fmin3(fwd, rev, 20), 1 ); // const = 20
 }
+
 
 
 double Dt(int x, Image *image, int i, int j) {
@@ -470,7 +525,7 @@ double Dt(int x, Image *image, int i, int j) {
     double  I, I_1 = 0, I_2 = 0;
 
 	if(x < 0 || x > image->label_max ) return INF;
-    if (j - x < 0) return 10000;
+    if (j - x < 0) return INF;
 
     int flag = 1;
     while(flag){
@@ -529,7 +584,17 @@ double Dt(int x, Image *image, int i, int j) {
     //return C_D * (I);
 }
 
-double energy(Graph *G, int *label, int *I, double T, int lamda) {
+int calheight(int width, int node) {
+	if (node % width) return node / width;
+	else return node / width - 1;
+}
+
+int calwidth(int width, int node) {
+	if (node % width) return node % width - 1;
+	else return width - 1;
+}
+
+double energy(Graph *G, int *label, int *I, double T, int lambda) {
     int i;
     double energy = 0;
     //* Dterm
@@ -539,15 +604,15 @@ double energy(Graph *G, int *label, int *I, double T, int lamda) {
     // */
     // Vterm
     for (i = 1; i <= G->m - 2 * (G->n - 2); i++) {
-        energy += pairwise(label[G->tail[i]], label[G->head[i]], T, lamda);
+        energy += pairwise(label[G->tail[i]], label[G->head[i]], T, lambda);
     }
     return energy;
 }
 
-double energy_str(Graph *G, int *label,  double T, int lamda, int height, int width, int label_max, int *left, int *right, img *raw_left, img *raw_right) {
+double energy_str(Graph *G, int *label,  double T, int lambda, int height, int width, int label_max, int *left, int *right, img *raw_left, img *raw_right) {
     int i;
     double energy = 0;
-    //* Dterm
+    // Dterm
     if (dterm == 1) {
         for (i = 1; i <= G->n - 2; i++) {
             energy += data_str(i, label[i], width, left, right);
@@ -556,14 +621,15 @@ double energy_str(Graph *G, int *label,  double T, int lamda, int height, int wi
     } else {
         for(int i = 1; i < G->n - 1; i++) {
             // energy += Dt(label[i], &image, i / image.width, i % image.width);
-            energy = D_function(label[i], raw_left, raw_right, height, width, label_max);
+            energy += D_function(label[i], raw_left, raw_right, calheight(width, i), calwidth(width, i), label_max);
         }
     }
     
     // Vterm
-    for (i = 1; i <= G->m - 2 * (G->n - 2); i++) {
-        energy += pairwise(label[G->tail[i]], label[G->head[i]], T, lamda);
-    }
+    // for (i = 1; i <= G->m - 2 * (G->n - 2); i++) {
+    //     energy += pairwise(label[G->tail[i]], label[G->head[i]], T, lambda);
+    // }
+    energy += V_energy(label, height, width, T, lambda);
     return energy;
 }
 
@@ -630,23 +696,23 @@ int make_label_index(Graph *G, int *label, int *label_index, int alpha, int beta
     return arraysize;
 }
 
-double phi (int i, int j, int *ls, double T, int lamda) {
+double phi (int i, int j, int *ls, double T, int lambda) {
     double p = 0;
     if(j > i) return 0;
     if(1 < j && j <= i) {
-        p = lamda * (theta(ls[i] - ls[j - 1], T) - theta(ls[i] - ls[j], T) - theta(ls[i - 1] - ls[j - 1], T) + theta(ls[i - 1] - ls[j], T));
+        p = lambda * (theta(ls[i] - ls[j - 1], T) - theta(ls[i] - ls[j], T) - theta(ls[i - 1] - ls[j - 1], T) + theta(ls[i - 1] - ls[j], T));
         if(i == j) p *= 0.5;
     }
     return p;
 }
 
-double nn(int i, int label, int *ls, double T, int lamda) {
+double nn(int i, int label, int *ls, double T, int lambda) {
     double p = 0;
-    p = pairwise(ls[i], label, T, lamda);
+    p = pairwise(ls[i], label, T, lambda);
     return p;
 }
 
-double near_nodes(int i, int j, int height, int width, int *ls, int *label, int *isin, double T, int lamda) {
+double near_nodes(int i, int j, int height, int width, int *ls, int *label, int *isin, double T, int lambda) {
     int grids_node = height * width;
 
     double nnp_total = 0;
@@ -655,7 +721,8 @@ double near_nodes(int i, int j, int height, int width, int *ls, int *label, int 
         // 画素が一番上の行に存在しないとき(iの上が空白でないとき)
         if (!isin[i - width]){
             // iの上の点がLs内に含まれない
-            nnp_total += pairwise(ls[j], label[i - width], T, lamda) ;
+            // nnp_total += pairwise(ls[j], label[i - width], T, lambda) ;
+            nnp_total += V_function(ls[j], label[i - width], T, lambda) ;
         }
     }
 
@@ -663,7 +730,8 @@ double near_nodes(int i, int j, int height, int width, int *ls, int *label, int 
         // 画素が一番下の行に存在しないとき(iの下が空白でないとき)
         if (!isin[i + width]){
             // iの下の点がLs内に含まれない
-            nnp_total += pairwise(ls[j], label[i + width], T, lamda) ;
+            // nnp_total += pairwise(ls[j], label[i + width], T, lambda) ;
+            nnp_total += V_function(ls[j], label[i + width], T, lambda) ;
         }
     }
 
@@ -671,7 +739,8 @@ double near_nodes(int i, int j, int height, int width, int *ls, int *label, int 
         // 画素が一番左の列に存在しないとき(iの左が空白でないとき)
         if (!isin[i - 1]){
             // iの左の点がLs内に含まれない
-            nnp_total += pairwise(ls[j], label[i - 1], T, lamda) ;
+            // nnp_total += pairwise(ls[j], label[i - 1], T, lambda) ;
+            nnp_total += V_function(ls[j], label[i - 1], T, lambda) ;
         }
     }
 
@@ -679,22 +748,25 @@ double near_nodes(int i, int j, int height, int width, int *ls, int *label, int 
         // 画素が一番右の列に存在しないとき(iの右が空白でないとき)
         if (!isin[i + 1]){
             // iの右の点がLs内に含まれない
-            nnp_total += pairwise(ls[j], label[i + 1], T, lamda) ;
+            // nnp_total += pairwise(ls[j], label[i + 1], T, lambda) ;
+            nnp_total += V_function(ls[j], label[i + 1], T, lambda) ;
         }
     }
     return nnp_total;
 }
 
 // set_edge for grsa
-int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image) {
-    int i, j, k, l;
+int set_edge(Graph *G, int *ls, int *label, double T, int lambda, int label_max, int *left, int *right, img *raw_left, img *raw_right) {
+    int i, j, k, l, height, width;
     int tail, head, t_base, h_base, grids_node, source, sink, edge_count, current_edge;
     int s2i_begin, i2t_begin, depth_begin;
     int *isin;
     double *min;
 
     // 格子部分1階層分の点数合計
-    grids_node = image.height * image.width;
+    grids_node = raw_left->height * raw_left->width;
+    height = raw_left->height;
+    width = raw_left->width;
 
     if (((min = (double *) malloc(sizeof(double) * G->n))) == NULL) {
         fprintf(stderr, "set_all_edge(): ERROR [min = malloc()]\n");
@@ -738,13 +810,11 @@ int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image) {
             head = head + grids_node;
             setEdge(G, edge_count, tail, head, 0);
             if(isin[i]) {
-                // G->capa[edge_count] = data(I_left[i],ls[j]) + nnp_4_grsa(i, j, height, width, ls, label, T, lamda);
                 // これまでの
-                if (dterm == 0) G->capa[edge_count] = Dt(ls[j], &image, i / image.width, i % image.width) + near_nodes(i, j, image.height, image.width, ls, label, isin, T, lamda);
-                else  G->capa[edge_count] = data_str(i, ls[j], image.width, image.left, image.right) + near_nodes(i, j, image.height, image.width, ls, label, isin, T, lamda);
-                
+                // if (dterm == 0) G->capa[edge_count] = Dt(ls[j], &image, i / width, i % width) + near_nodes(i, j, height, width, ls, label, isin, T, lambda);
+                if (dterm == 0) G->capa[edge_count] = D_function(ls[j], raw_left, raw_right, calheight(width, i), calwidth(width, i), label_max) + near_nodes(i, j, height, width, ls, label, isin, T, lambda);
+                else  G->capa[edge_count] = data_str(i, ls[j], width, left, right) + near_nodes(i, j, height, width, ls, label, isin, T, lambda);
             }
-
             if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
             edge_count++;
             tail = head;
@@ -756,10 +826,10 @@ int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image) {
     for (i = 1; i <= grids_node; i++) {
         setEdge(G, edge_count, i + grids_node * (ls[0] - 1), sink, 0);
         if(isin[i]) {
-            // G->capa[edge_count] = data(I_left[i], ls[ls[0]]) + nnp_4_grsa(i, ls[0], height, width, ls, label, T, lamda);
-            // G->capa[edge_count] = data_str(i, ls[ls[0]], image.width, image.left, image.right) + near_nodes(i, j, image.height, image.width , ls, label, isin, T, lamda);
-            if (dterm == 0) G->capa[edge_count] = Dt(ls[ls[0]], &image, i / image.width, i % image.width) + near_nodes(i, j, image.height, image.width , ls, label, isin, T, lamda);
-            else G->capa[edge_count] = data_str(i, ls[ls[0]], image.width, image.left, image.right) + near_nodes(i, j, image.height, image.width , ls, label, isin, T, lamda);
+            // G->capa[edge_count] = data_str(i, ls[ls[0]], image.width, image.left, image.right) + near_nodes(i, j, image.height, image.width , ls, label, isin, T, lambda);
+            // if (dterm == 0) G->capa[edge_count] = Dt(ls[ls[0]], &image, i / width, i % width) + near_nodes(i, j, height, width , ls, label, isin, T, lambda);
+            if (dterm == 0) G->capa[edge_count] = D_function(ls[ls[0]], raw_left, raw_right, calheight(width, i), calwidth(width, i), label_max) + near_nodes(i, j, height, width , ls, label, isin, T, lambda);
+            else G->capa[edge_count] = data_str(i, ls[ls[0]], width, left, right) + near_nodes(i, j, height, width , ls, label, isin, T, lambda);
         }
 
         if (min[i] > G->capa[edge_count]) min[i] = G->capa[edge_count];
@@ -786,9 +856,9 @@ int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image) {
 
     // new codes
     // horizonal
-    for (i = 1; i <= image.height; i++) {
-        for (j = 1; j < image.width; j++) {
-            t_base =  (i - 1) * image.width + j;
+    for (i = 1; i <= height; i++) {
+        for (j = 1; j < width; j++) {
+            t_base =  (i - 1) * width + j;
             h_base =  t_base + 1;
             for (k = 1; k < ls[0]; k++) {
                 tail = t_base + k * grids_node;
@@ -797,7 +867,7 @@ int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image) {
                     setEdge(G, edge_count, tail, head, 0);
                     if(isin[t_base] && isin[h_base]) {
                         // head, tail in label_index
-                        G->capa[edge_count] = phi(k + 1, l + 1, ls, T, lamda);
+                        G->capa[edge_count] = phi(k + 1, l + 1, ls, T, lambda);
                     }
                     edge_count++;
                 }
@@ -806,17 +876,17 @@ int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image) {
     }
 
     // vertical
-    for (i = 1; i < image.height ; i++){
-        for (j = 1; j < image.width + 1; j++) {
-            t_base = (i - 1) * image.width + j;
-            h_base = t_base + image.width;
+    for (i = 1; i < height ; i++){
+        for (j = 1; j < width + 1; j++) {
+            t_base = (i - 1) * width + j;
+            h_base = t_base + width;
             for (k = 1; k < ls[0]; k++) {
                 tail = t_base + k * grids_node;
                 for (l = 1; l < ls[0]; l++) {
                     head = h_base + l * grids_node;
                     setEdge(G, edge_count, tail, head, 0);
                     if(isin[t_base] && isin[h_base]) {
-                        G->capa[edge_count] = phi(k + 1, l + 1, ls, T, lamda);
+                        G->capa[edge_count] = phi(k + 1, l + 1, ls, T, lambda);
                         // head, tail in label_index
                     }
                     edge_count++;
@@ -829,9 +899,9 @@ int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image) {
 
     // new codes
     // horizonal
-    for (i = 1; i <= image.height; i++) {
-        for (j = 1; j < image.width; j++) {
-            t_base =  (i - 1) * image.width + j;
+    for (i = 1; i <= height; i++) {
+        for (j = 1; j < width; j++) {
+            t_base =  (i - 1) * width + j;
             h_base =  t_base + 1;
             for (k = 1; k < ls[0]; k++) {
                 tail = t_base + k * grids_node;
@@ -839,7 +909,7 @@ int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image) {
                     head = h_base + l * grids_node;
                     setEdge(G, edge_count, head, tail, 0);
                     if(isin[t_base] && isin[h_base]) {
-                        G->capa[edge_count] = phi(l + 1, k + 1, ls, T, lamda);
+                        G->capa[edge_count] = phi(l + 1, k + 1, ls, T, lambda);
                     }
                     edge_count++;
                 }
@@ -848,17 +918,17 @@ int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image) {
     }
 
     // vertical
-    for (i = 1; i < image.height ; i++){
-        for (j = 1; j < image.width + 1; j++) {
-            t_base = (i - 1) * image.width + j;
-            h_base = t_base + image.width;
+    for (i = 1; i < height ; i++){
+        for (j = 1; j < width + 1; j++) {
+            t_base = (i - 1) * width + j;
+            h_base = t_base + width;
             for (k = 1; k < ls[0]; k++) {
                 tail = t_base + k * grids_node;
                 for (l = 1; l < ls[0]; l++) {
                     head = h_base + l * grids_node;
                     setEdge(G, edge_count, head, tail, 0);
                     if(isin_array(ls, label[t_base]) && isin_array(ls, label[h_base])) {
-                        G->capa[edge_count] = phi(l + 1, k + 1, ls, T, lamda);
+                        G->capa[edge_count] = phi(l + 1, k + 1, ls, T, lambda);
                     }
                     edge_count++;
                 }
@@ -889,31 +959,31 @@ int set_edge(Graph *G, int *ls, int *label, double T, int lamda, Image image) {
     return edge_count - 1;
 }
 
-double err_rate(img *output, Image image) {
+double err_rate(img *output, img *truth, int scale) {
     int i, error_count = 0;
     double err;
     //     // Gray(&truth, &truth);
     //     Gray(&(image.output), &(image.output));
 
-    if (image.truth->data[0][0].r) {
-        for(i = 1; i <= (image.output->height) * (image.output->width); i++) {
-            if (abs(image.output->data[(i - 1) / image.output->width][(i - 1) % image.output->width].r - image.truth->data[(i - 1) / image.truth->width][(i - 1) % image.truth->width].r )
-                >= image.scale + 1) {
+    if (truth->data[0][0].r) {
+        for(i = 1; i <= (output->height) * (output->width); i++) {
+            if (abs(output->data[(i - 1) / output->width][(i - 1) % output->width].r - truth->data[(i - 1) / truth->width][(i - 1) % truth->width].r )
+                >= scale + 1) {
                 error_count++;
             }
         }
     } else {
-        for(i = 1; i <= (image.output->height) * (image.output->width); i++) {
-            if ((i - 1) / image.output->width >= image.scale && (i - 1) % image.output->width >= image.scale &&
-                (i - 1) / image.output->width <= image.output->height - image.scale && (i - 1) % image.output->width <= image.output->width - image.scale) {
-                if (abs(image.output->data[(i - 1) / image.output->width][(i - 1) % image.output->width].r - image.truth->data[(i - 1) / image.truth->width][(i - 1) % image.truth->width].r )
-                    >= image.scale + 1) {
+        for(i = 1; i <= (output->height) * (output->width); i++) {
+            if ((i - 1) / output->width >= scale && (i - 1) % output->width >= scale &&
+                (i - 1) / output->width <= output->height - scale && (i - 1) % output->width <= output->width - scale) {
+                if (abs(output->data[(i - 1) / output->width][(i - 1) % output->width].r - truth->data[(i - 1) / truth->width][(i - 1) % truth->width].r )
+                    >= scale + 1) {
                     error_count++;
                 }
             }
         }
     }
 
-    err = 100 * error_count / (double)(image.truth->height * image.truth->width);
+    err = 100 * error_count / (double)(truth->height * truth->width);
     return err;
 }
