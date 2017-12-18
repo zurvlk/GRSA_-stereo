@@ -6,13 +6,13 @@ result=`date +%Y%m%d_%H-%M-%S`.log
 echo "---GRSA---"
 for dterm in 0 1
 do
-    for lambda in 1 2 3 4 5 6 7 
+    for lambda in 6 7 
     do
         for T in  2 3 4 5 6 7 8
         do
         # range_size <= label_size
             job_start=`date +%s`
-            ./grsa input/tsukuba_ output/ab_tsukuba_${dterm}_${lambda}_${T}.bmp ${T} 16 $lambda ${dterm} >>  log/${dterm}_lambda_${lambda}_tsukuba${result}
+            ./grsa input/tsukuba_ output/grsa_tsukuba_${dterm}_${lambda}_${T}.bmp ${T} 16 $lambda ${dterm} >>  log/grsa_${dterm}_lambda_${lambda}_tsukuba${result}
             job_end=`date +%s`
             time=$((job_end - job_start));
             count=`expr $count + 1`

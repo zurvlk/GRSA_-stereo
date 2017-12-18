@@ -42,3 +42,5 @@ void set_single_edges(Graph *G, int height, int width);
 int cmparray(int *array1, int *array2, int size);
 void cpyarray(int *terget, int *source, int size);
 double err_rate(img *output, img *truth, int scale);
+void set_capacity_abswap(Graph *G, int *label, int alpha, int beta, double T, int lambda, img *left, img *right, int label_max);
+void set_abswap_edge(Graph *G, int height, int width);

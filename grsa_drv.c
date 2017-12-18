@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
         scale = atoi(argv[4]);
         lambda = atoi(argv[5]);
         if(argc >= 7)  dterm = atoi(argv[6]);
-         if(argc == 8)  T = atof(argv[7]);
+        if(argc == 8)  T = atof(argv[7]);
     }
 
     if(T < range_size) {
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    printf("T: %f\n",theta(T, INF));
+    // printf("T: %f\n",theta(T, INF));
     if(T == INF) T = theta(range_size, INF);
     else{
         i = theta(T, INF);;
@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
     prev_energy = energy_str(&Ge, label,  T, lambda, height, width, label_max, left, right, raw_left, raw_right);
     printf("Energy (before): %.0lf\n", prev_energy);
 
-#if _OUTPUT_T_
+    #if _OUTPUT_T_
     fprintf(fp, "Energy (before): %lf\n", prev_energy);
     fprintf(fp, "position :\n");
     for (i = 1; i <= Ge.n - 2; i++) {
@@ -210,7 +210,7 @@ int main(int argc, char *argv[]) {
         if(i % (grids_node) == 0) fprintf(fp, "-------------------------------------\n");
     }
 
-#endif
+    #endif
 
     last_move = total_ss_count + 1;
     decreace = 0;
@@ -227,7 +227,7 @@ int main(int argc, char *argv[]) {
             }
             before_energy = energy_str(&Ge, label,  T, lambda, height, width, label_max, left, right, raw_left, raw_right);
 
-#if _OUTPUT_T_
+            #if _OUTPUT_T_
             fprintf(fp, "\n-------------------------------------\n");
             fprintf(fp, "submodular subsets: ");
             for (j = 1; j <= ss.ls[i][0]; j++) {
@@ -249,7 +249,7 @@ int main(int argc, char *argv[]) {
                 if(j % raw_left->width == 0) fprintf(fp, "\n");
                 if(j % (grids_node) == 0) fprintf(fp, "-------------------------------------\n");
             }
-#endif
+            #endif
 
             if (ss.ls[i][0] == 1) continue;
             // printf("submodular subsets: ");
@@ -304,9 +304,10 @@ int main(int argc, char *argv[]) {
                 printf("err %lf -> %lf\n", before_energy, new_energy);
                 for (j = 1; j <= ss.ls[i][0]; j++) printf("%d ", ss.ls[i][j]);
                 printf("\n");
+                exit(EXIT_FAILURE);
             }
 
-#if _OUTPUT_T_
+            #if _OUTPUT_T_
             fprintf(fp, "t: \n");
             for (j = 1; j <= G.n - 2; j++) {
                 // printf("t[%d] : %d\n", i, t[i]);
@@ -321,9 +322,9 @@ int main(int argc, char *argv[]) {
                 if(j % raw_left->width == 0) fprintf(fp, "\n");
                 if(j % (grids_node) == 0) fprintf(fp, "-------------------------------------\n");
             }
-#endif
+            #endif
 
-#if _OUTPUT_PROGRESS_
+            #if _OUTPUT_PROGRESS_
             for (j = 0; j <  raw_left->height; j++) {
                 for (k = 0; k < raw_left->width; k++) {
                     output->data[j][k].r = label[j * raw_left->width + k + 1] * scale;
@@ -334,31 +335,87 @@ int main(int argc, char *argv[]) {
             sprintf(pf, "output/left_%04d.bmp", l);
             WriteBmp(pf, &output);
             l++;
-#endif
+            #endif
             // showGraph(&G);
             free(f);
             free(t);
             delGraph(&G);
 
-#if _RUN_FIRST_ONLY_
+            #if _RUN_FIRST_ONLY_
             flag = 1;
             break;
- #endif
+            #endif
         }
         if (flag) break;
         decreace = prev_energy - energy_str(&Ge, label, T, lambda, height, width, label_max, left, right, raw_left, raw_right);
-#if _SHOW_EACH_ENERGY_
-        // printf("Energy : %.0lf\n", energy_str(&Ge, label, T, lambda, image));
-#endif
+
+        #if _SHOW_EACH_ENERGY_
+        printf("Energy : %.0lf\n", energy_str(&Ge, label, T, lambda, height, width, label_max, left, right, raw_left, raw_right));
+        #endif
     } while (decreace > 0);
 
-#if _OUTPUT_T_
+    if ((f = (double *) malloc(sizeof(double) * (G.m + 1))) == NULL) {
+        fprintf(stderr, "main(): ERROR [f = malloc()]\n");
+        return (EXIT_FAILURE);
+    }
+    if ((t = (int *) malloc(sizeof(int) * (G.n + 1))) == NULL) {
+        fprintf(stderr, "main(): ERROR [t = malloc()]\n");
+        return (EXIT_FAILURE);
+    }
+
+    int alpha, beta;
+    node = grids_node + 2;
+    edge = (height - 1) * width + height * (width - 1) + 2 * grids_node;
+    
+    newGraph(&G, node, edge);
+    set_abswap_edge(&G, height, width);
+    initAdjList(&G);
+
+    for (alpha = 0; alpha <= label_max; alpha++) {
+        for (beta = 0; beta <= label_max; beta++) {
+            for (i = 0; i <= G.m; i++) {
+                f[i] = 0;
+                G.capa[i] = 0;
+            }
+
+            // capacity設定
+            set_capacity_abswap(&G, label, alpha, beta, T, lambda, raw_left, raw_right, label_max);
+            // capacity(&G, label, I, alpha);
+            ci++;
+            boykov_kolmogorov(G, f, t);
+
+            // tを基にラベル更新
+
+            for (i = 1; i <= G.n - 2; i++) {
+                if (label[i] == alpha || label[i] == beta) {
+                    if(t[i] == 1) {
+                        newlabel[i] = beta;
+                    } else {
+                        newlabel[i] = alpha;
+                    }
+                } else newlabel[i] = label[i];
+            }
+
+            if (energy_str(&Ge, newlabel, T, lambda, height, width, label_max, left, right, raw_left, raw_right) < energy_str(&Ge, label, T, lambda, height, width, label_max, left, right, raw_left, raw_right)) {
+                cpyarray(label, newlabel, grids_node);
+                // last = k;
+            } else if (energy_str(&Ge, newlabel, T, lambda, height, width, label_max, left, right, raw_left, raw_right) > energy_str(&Ge, label, T, lambda, height, width, label_max, left, right, raw_left, raw_right)) {
+                printf("エネルギー増加\n");
+                exit(EXIT_FAILURE);
+            }
+            #if _SHOW_EACH_ENERGY_
+            printf("Energy : %.0lf\n", energy_str(&Ge, label, T, lambda, height, width, label_max, left, right, raw_left, raw_right));
+            #endif
+        }
+    }
+
+    #if _OUTPUT_T_
     fprintf(fp, "result:\n");
     for (i = 1; i <= Ge.n - 2; i++) {
         fprintf(fp, "%d ", label[i]);
         if(i % raw_left->width == 0) fprintf(fp, "\n");
     }
-#endif
+    #endif
 
     printf("Energy (after): %.0lf\n", energy_str(&Ge, label,  T, lambda, height, width, label_max, left, right, raw_left, raw_right));
     printf("Iteration: %d\n", ci);
@@ -375,10 +432,10 @@ int main(int argc, char *argv[]) {
     }
     WriteBmp(output_file, output);
 
-#if _OUTPUT_T_
+    #if _OUTPUT_T_
     fprintf(fp, "Energy (after): %lf\n", energy_str(&Ge, label,  T, lambda, height, width, label_max, left, right, raw_left, raw_right));
     fclose(fp);
-#endif
+    #endif
 
     if(errlog) printf("エネルギーが増大する移動が確認されました\n");
 
