@@ -23,6 +23,7 @@ typedef struct __SUBMODULAR_SUBSETS__ {
 
 int function;
 int dterm;
+int harf;
 void readStrBitmap(Image *image, char filename[], int scale);
 int gen_submodular_subsets(int label_size, int range_size, Subsets *ss);
 int nc2(int n);

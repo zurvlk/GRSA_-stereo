@@ -2,23 +2,24 @@
 ulimit -s unlimited
 start_time=`date +%s`
 count=1
-result=`date +%Y%m%d_%H-%M-%S`.log
+result=`date +%Y%m%d_%H-%M-%S`
+appendinfo=force_grsa_harf
 echo "---GRSA---"
-for dterm in 0 1
+for dterm in 0
 do
-    for lambda in 6 7 
+    for lambda in 7 
     do
-        for T in  2 3 4 5 6 7 8
+        for T in 2 3 4 5 6 7
         do
         # range_size <= label_size
             job_start=`date +%s`
-            ./grsa input/tsukuba_ output/grsa_tsukuba_${dterm}_${lambda}_${T}.bmp ${T} 16 $lambda ${dterm} >>  log/grsa_${dterm}_lambda_${lambda}_tsukuba${result}
+            ./grsa input/tsukuba_ output/${appendinfo}_tsukuba_${dterm}_${lambda}_${T}.bmp ${T} 16 $lambda ${dterm} >>  log/${result}_${appendinfo}_${dterm}_lambda_${lambda}_tsukuba.log
             job_end=`date +%s`
             time=$((job_end - job_start));
             count=`expr $count + 1`
             echo "tsukuba, lambda=${lambda} [${time}s]";
         done
-        git add log/${dterm}_lambda_${lambda}_tsukuba${result}
+        git add  log/${result}_${appendinfo}_${dterm}_lambda_${lambda}_tsukuba.log
         git commit -m "job_${result}"
         git push origin master
     done

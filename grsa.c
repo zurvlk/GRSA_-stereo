@@ -7,10 +7,11 @@
 #include <string.h>
 #include <math.h>
 
-#define INF DBL_MAX
-// #define INF 10000000
-#define _CONSIDE_ALL_PAIRS_ 1
-
+// #define INF DBL_MAX
+#define INF 10000000
+#define _CONSIDE_ALL_PAIRS_ 0
+#define _harf_ 1
+#define _CALC_INFTY_ 1 // エネルギー計算時に取り得ない値を無限大で計算する 0:しない 1:する
 double dabs(double a, double b) {
     return a - b > 0 ? a - b : b - a;
 }
@@ -236,6 +237,47 @@ int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
                     n = ss->ls[large_array][j];
                 }
 
+                if (harf) {
+                    for (j = large_array + 1; j < 2 * large_array - 1; j++) {
+                        if ((ss->ls[j] = (int *)malloc(sizeof(int) * (rs2 + 1))) == NULL) {
+                            fprintf(stderr, "Error!:malloc[main()->ls(harf1)]\n");
+                            exit(EXIT_FAILURE);
+                        }
+                        ss->ls[j][0] = rs2;
+                        if(j == large_array + 1) ss->ls[j][1] = range_size / 2;
+                        else ss->ls[j][1] = ss->ls[j - 1][range_size];
+                        for (k = 2; k <= rs2; k++) {
+                            // printf("%d, %d\n", j, k);
+                            ss->ls[j][k] = ss->ls[j][k - 1] + 1;
+                            n = ss->ls[j][k];
+                            // printf("%d ", ss->ls[j][k]);
+                        }
+                        // printf("\n");
+                    }
+
+                    large_array = 2 * large_array - 2;
+                    
+                    // int **tmp, **tmp2;
+                    // if ((tmp = (int **)malloc(sizeof(int*) * (nc2(label_size) + 1))) == NULL) {
+                    //     fprintf(stderr, "Error!:malloc[main()->ls]\n");
+                    //     exit(EXIT_FAILURE);
+                    // }
+                    // k = 1;
+                    // for (j = 1; j < large_array; j++) {
+                    //     if (j % 2 == 1) {
+                    //         tmp[j] = ss->ls[k];
+                    //         k++;
+                    //     } else tmp[j] = ss->ls[k + ss->number];
+                    // }
+                    // if (k != ss->number) printf("error!\n");
+                    // tmp2 = ss->ls;
+                    // ss->ls = tmp;
+                    // free(tmp2);
+
+                    ss->number = large_array;
+
+                }
+                #if _CONSIDE_ALL_PAIRS_
                 for (current_array = 1; current_array <= large_array; current_array++) {
                     for (k = 0; k < ss->ls[current_array][0]; k++) {
                         for (l = k + 1; l <= ss->ls[current_array][0]; l++) {
@@ -248,6 +290,7 @@ int gen_submodular_subsets(int label_size, int range_size, Subsets *ss) {
                         }
                     }
                 }
+                #endif
 
             } else {
                 large_array = 0;
@@ -438,7 +481,11 @@ double D_function(int x, img *tmpL, img *tmpR, int h, int w, int maxLabel) {
 	int q = w - x;
 	double Ip, Iq, Ip_l, Ip_r, Iq_r, Iq_l, fwd, rev;
 
-	if ( (x < 0) || (x > maxLabel) || q < 0 ) { return INF; }
+	if ( (x < 0) || (x > maxLabel)) { return INF; }
+
+    #if _CALC_INFTY_
+    if (q < 0) return INF;
+    #endif
 
 	Ip = tmpL->data[h][w].r;
 	Iq = tmpR->data[h][q].r;
@@ -489,6 +536,64 @@ double D_function(int x, img *tmpL, img *tmpR, int h, int w, int maxLabel) {
     if (fmin3(fwd, rev, 20) < 0) printf("error\n");
 	return pow( fmin3(fwd, rev, 20), 1 ); // const = 20
 }
+
+double D(int x, img *tmpL, img *tmpR, int h, int w, int maxLabel) {
+
+	int q = w - x;
+	double Ip, Iq, Ip_l, Ip_r, Iq_r, Iq_l, fwd, rev;
+
+	if ( (x < 0) || (x > maxLabel)) { return INF; }
+
+	Ip = tmpL->data[h][w].r;
+	Iq = tmpR->data[h][q].r;
+
+	if ( !q )
+	{
+		Iq_l = INF;
+		Iq_r = (Iq + tmpR->data[h][q + 1].r) / 2.0;
+		if( between(Iq, Ip, Iq_r) ) { return 0; }
+	}
+	else if ( (q + 1) == tmpR->width )
+	{
+		Iq_l = (Iq + tmpR->data[h][q - 1].r) / 2.0;
+		Iq_r = INF;
+		if( between(Iq_l, Ip, Iq) ) { return 0; }
+	}
+	else
+	{
+		Iq_r = (Iq + tmpR->data[h][q + 1].r) / 2.0;
+		Iq_l = (Iq + tmpR->data[h][q - 1].r) / 2.0;
+		if( between(Iq_r, Ip, Iq) ) { return 0; }
+		if( between(Iq_l, Ip, Iq) ) { return 0; }
+	}
+
+	fwd = fmin3( fabs(Ip - Iq_l), fabs(Ip - Iq), fabs(Ip - Iq_r) );
+
+	if( !w )
+	{
+		Ip_l = INF;
+		Ip_r = (Ip + tmpL->data[h][w + 1].r) / 2.0;
+		if( between(Ip, Iq, Ip_r) ) { return 0; }
+	}
+	else if ( (w + 1) == tmpL->width )
+	{
+		Ip_l = (Ip + tmpL->data[h][w - 1].r) / 2.0;
+		Ip_r = INF;
+		if( between(Ip_l, Iq, Ip) ) { return 0; }
+	}
+	else
+	{
+		Ip_l = (Ip + tmpL->data[h][w - 1].r) / 2.0;
+		Ip_r = (Ip + tmpL->data[h][w + 1].r) / 2.0;
+		if( between(Ip_l, Iq, Ip) ) { return 0; }
+		if( between(Ip_r, Iq, Ip) ) { return 0; }
+	}
+
+	rev = fmin3( fabs(Ip_l - Iq), fabs(Ip - Iq), fabs(Ip_r - Iq) );
+    if (fmin3(fwd, rev, 20) < 0) printf("error\n");
+	return pow( fmin3(fwd, rev, 20), 1 ); // const = 20
+}
+
 
 
 double D_single(int x, img *tmp_l2, img *tmp_r2, int n, int m) {
@@ -604,6 +709,7 @@ double energy_str(Graph *G, int *label,  double T, int lambda, int height, int w
         // energy += Dt(label[i], &image, i / image.width, i % image.width);
         if (dterm == 1) energy += Dt_9n(label[i], raw_left, raw_right, calheight(width, i), calwidth(width, i), label_max);
         else            energy += D_function(label[i], raw_left, raw_right, calheight(width, i), calwidth(width, i), label_max);
+        // else    energy += D(label[i], raw_left, raw_right, calheight(width, i), calwidth(width, i), label_max);
     }
     
     

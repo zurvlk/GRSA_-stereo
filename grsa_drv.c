@@ -11,7 +11,7 @@
 
 
 
-#define INF DBL_MAX
+#define INF 100000000
 
 #define _OUTPUT_T_ 0     // BK-maxflow後のtの状態をファイルに出力 0:出力しない 1:出力する
 #define _OUTPUT_INFO_ 0     // デバッグ情報出力 0:出力しない 1:出力する
@@ -20,15 +20,18 @@
 #define _RUN_FIRST_ONLY_ 0 // 1度目の移動で終了(デバッグ用)
 #define _SHOW_EACH_ENERGY_ 0 // 各移動時にエネルギー表示
 #define _OUTPUT_SUBMODULAR_SUBSETS_ 1
-
+#define _MOVE_FORCE_ 1 // 取り得ない値の場合に強制的に移動 0:行わない 1:行う
 int main(int argc, char *argv[]) {
-    int i, j, k, node, edge, grids_node, flag, height, width;
+    int i, j, k, node, edge, grids_node, flag, flag_2, height, width, min;
     int scale, grids_edge, count, last_move, ci, total_ss_count, label_max;
     int *t, *label, *newlabel, *label_index, *left, *right;
     int label_size = 16;
     int range_size = 4;
     int errlog = 0;
     int lambda = 1;
+    int init_label = 5;
+    int subset = 1; // 0: Rangeswap 1: GRSA;
+    int ab_swap = 0;
     double decreace, prev_energy, before_energy, new_energy, err,  T = INF;
     double *f;
     char output_file[100];
@@ -46,7 +49,7 @@ int main(int argc, char *argv[]) {
     char pf[100];
     system("rm output/*.bmp &> /dev/null");
 #endif
-
+    harf = 1;
     dterm = 0;
     function = 1;
     if (argc != 2 && argc != 3 && argc != 5 && argc != 6 && argc != 7 && argc != 8) {
@@ -110,6 +113,10 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error! label_size < range_size \n");
         exit (EXIT_FAILURE);
     }
+    if (harf != 0 && harf != 1) {
+        fprintf(stderr, "error! harf is 0 or 1 (your input is %d)\n", harf);
+        exit (EXIT_FAILURE);
+    }
 
     grids_node = height * width;
 
@@ -141,8 +148,28 @@ int main(int argc, char *argv[]) {
     } 
     ss.T = T;
     // ccvex 凸区間の数(count of convex)
-    total_ss_count = gen_submodular_subsets(label_size, range_size, &ss);
-    
+
+
+    if (subset && range_size > 2) {
+        total_ss_count = gen_submodular_subsets(label_size, range_size, &ss);
+    } else {
+        total_ss_count = label_size - range_size + 1;
+        if ((ss.ls = (int **)malloc(sizeof(int*) * (total_ss_count + 1))) == NULL) {
+            fprintf(stderr, "Error!:malloc[main()->ls]\n");
+            exit(EXIT_FAILURE);
+        }
+        for (i = 1; i <= total_ss_count; i++) {
+            if ((ss.ls[i] = (int *)malloc(sizeof(int) * (range_size + 1))) == NULL) {
+                fprintf(stderr, "Error!:malloc[main()->ls]\n");
+                exit(EXIT_FAILURE);
+            }
+            ss.ls[i][0] = range_size;
+            ss.ls[i][1] = i - 1;
+            for (j = 2; j <= range_size; j++) {
+                ss.ls[i][j] = ss.ls[i][j - 1] + 1;
+            }
+        }
+    }
     printf("submodular subsets: \n");
     for (i = 1; i <= total_ss_count; i++) {
         if (ss.ls[i][0] != 1) {
@@ -188,7 +215,7 @@ int main(int argc, char *argv[]) {
     }
 
     // 輝度から初期ラベル設定
-    for (i = 1; i <= grids_node ; i++) label[i] = 5;
+    for (i = 1; i <= grids_node ; i++) label[i] = init_label;
     cpyarray(newlabel, label, grids_node);
     prev_energy = energy_str(&Ge, label,  T, lambda, height, width, label_max, left, right, raw_left, raw_right);
     printf("Energy (before): %.0lf\n", prev_energy);
@@ -221,6 +248,7 @@ int main(int argc, char *argv[]) {
     do {
         prev_energy = energy_str(&Ge, label,  T, lambda, height, width, label_max, left, right, raw_left, raw_right);
         for(i = 1; i <= total_ss_count; i++) {
+            flag_2 = 0;
             if (last_move == i) {
                 flag = 1;
                 break;
@@ -281,6 +309,10 @@ int main(int argc, char *argv[]) {
             for (j = 0; j < G.n + 1 ; j++) t[j] = 0;
             boykov_kolmogorov(G, f, t);
             ci++;
+            min = INF;
+            for (j = 1; j <= ss.ls[i][0]; j++) {
+                if (min > ss.ls[i][j]) min = ss.ls[i][j];
+            }
 
             for (j = 1; j <= Ge.n - 2; j++) {
                 if (isin_array(ss.ls[i], label[j])) {
@@ -292,6 +324,15 @@ int main(int argc, char *argv[]) {
                         count++;
                     }
                     newlabel[j] = ss.ls[i][count];
+                    #if _MOVE_FORCE_
+                    
+                    //　取り得ない値のラベルのときはラベルの中で最小の値へ移動する
+                    if (((j - 1) % width) -  newlabel[j] < 0) {
+                        flag_2 = 1;
+                        newlabel[j] = min;
+                    }
+
+                    #endif
                 } else newlabel[j] = label[j];
             }
             new_energy = energy_str(&Ge, newlabel,  T, lambda, height, width, label_max, left, right, raw_left, raw_right);
@@ -299,12 +340,19 @@ int main(int argc, char *argv[]) {
             if (new_energy < before_energy) {
                 last_move = i;
                 cpyarray(label, newlabel, grids_node);
-            } else if (new_energy > before_energy) {
+                #if _SHOW_EACH_ENERGY_
+                printf("a: %d b: %d %lf -> %lf\n", ss.ls[i][1], ss.ls[i][ss.ls[i][0]], before_energy, new_energy);
+                #endif
+            } else if (new_energy > before_energy && flag_2 == 0) {
                 errlog = 1;
                 printf("err %lf -> %lf\n", before_energy, new_energy);
                 for (j = 1; j <= ss.ls[i][0]; j++) printf("%d ", ss.ls[i][j]);
                 printf("\n");
                 exit(EXIT_FAILURE);
+            } else {
+                #if _SHOW_EACH_ENERGY_
+                printf("a: %d b: %d no update.\n", ss.ls[i][1], ss.ls[i][ss.ls[i][0]]);
+                #endif
             }
 
             #if _OUTPUT_T_
@@ -349,9 +397,7 @@ int main(int argc, char *argv[]) {
         if (flag) break;
         decreace = prev_energy - energy_str(&Ge, label, T, lambda, height, width, label_max, left, right, raw_left, raw_right);
 
-        #if _SHOW_EACH_ENERGY_
-        printf("Energy : %.0lf\n", energy_str(&Ge, label, T, lambda, height, width, label_max, left, right, raw_left, raw_right));
-        #endif
+        
     } while (decreace > 0);
 
     if ((f = (double *) malloc(sizeof(double) * (G.m + 1))) == NULL) {
@@ -363,49 +409,51 @@ int main(int argc, char *argv[]) {
         return (EXIT_FAILURE);
     }
 
-    int alpha, beta;
-    node = grids_node + 2;
-    edge = (height - 1) * width + height * (width - 1) + 2 * grids_node;
-    
-    newGraph(&G, node, edge);
-    set_abswap_edge(&G, height, width);
-    initAdjList(&G);
+    if (ab_swap) {
+        int alpha, beta;
+        node = grids_node + 2;
+        edge = (height - 1) * width + height * (width - 1) + 2 * grids_node;
+        
+        newGraph(&G, node, edge);
+        set_abswap_edge(&G, height, width);
+        initAdjList(&G);
 
-    for (alpha = 0; alpha <= label_max; alpha++) {
-        for (beta = 0; beta <= label_max; beta++) {
-            for (i = 0; i <= G.m; i++) {
-                f[i] = 0;
-                G.capa[i] = 0;
+        for (alpha = 0; alpha <= label_max; alpha++) {
+            for (beta = 0; beta <= label_max; beta++) {
+                for (i = 0; i <= G.m; i++) {
+                    f[i] = 0;
+                    G.capa[i] = 0;
+                }
+
+                // capacity設定
+                set_capacity_abswap(&G, label, alpha, beta, T, lambda, raw_left, raw_right, label_max);
+                // capacity(&G, label, I, alpha);
+                ci++;
+                boykov_kolmogorov(G, f, t);
+
+                // tを基にラベル更新
+
+                for (i = 1; i <= G.n - 2; i++) {
+                    if (label[i] == alpha || label[i] == beta) {
+                        if(t[i] == 1) {
+                            newlabel[i] = beta;
+                        } else {
+                            newlabel[i] = alpha;
+                        }
+                    } else newlabel[i] = label[i];
+                }
+
+                if (energy_str(&Ge, newlabel, T, lambda, height, width, label_max, left, right, raw_left, raw_right) < energy_str(&Ge, label, T, lambda, height, width, label_max, left, right, raw_left, raw_right)) {
+                    cpyarray(label, newlabel, grids_node);
+                    // last = k;
+                } else if (energy_str(&Ge, newlabel, T, lambda, height, width, label_max, left, right, raw_left, raw_right) > energy_str(&Ge, label, T, lambda, height, width, label_max, left, right, raw_left, raw_right)) {
+                    printf("エネルギー増加\n");
+                    exit(EXIT_FAILURE);
+                }
+                #if _SHOW_EACH_ENERGY_
+                printf("Energy : %.0lf\n", energy_str(&Ge, label, T, lambda, height, width, label_max, left, right, raw_left, raw_right));
+                #endif
             }
-
-            // capacity設定
-            set_capacity_abswap(&G, label, alpha, beta, T, lambda, raw_left, raw_right, label_max);
-            // capacity(&G, label, I, alpha);
-            ci++;
-            boykov_kolmogorov(G, f, t);
-
-            // tを基にラベル更新
-
-            for (i = 1; i <= G.n - 2; i++) {
-                if (label[i] == alpha || label[i] == beta) {
-                    if(t[i] == 1) {
-                        newlabel[i] = beta;
-                    } else {
-                        newlabel[i] = alpha;
-                    }
-                } else newlabel[i] = label[i];
-            }
-
-            if (energy_str(&Ge, newlabel, T, lambda, height, width, label_max, left, right, raw_left, raw_right) < energy_str(&Ge, label, T, lambda, height, width, label_max, left, right, raw_left, raw_right)) {
-                cpyarray(label, newlabel, grids_node);
-                // last = k;
-            } else if (energy_str(&Ge, newlabel, T, lambda, height, width, label_max, left, right, raw_left, raw_right) > energy_str(&Ge, label, T, lambda, height, width, label_max, left, right, raw_left, raw_right)) {
-                printf("エネルギー増加\n");
-                exit(EXIT_FAILURE);
-            }
-            #if _SHOW_EACH_ENERGY_
-            printf("Energy : %.0lf\n", energy_str(&Ge, label, T, lambda, height, width, label_max, left, right, raw_left, raw_right));
-            #endif
         }
     }
 
@@ -455,7 +503,7 @@ int main(int argc, char *argv[]) {
 
     free(ss.ls);
 
-    if (ss.pairs != NULL) {
+    if (ss.pairs != NULL && range_size > 2) {
         for (i = 0; i <= nc2(label_size); i++) {
             free(ss.pairs[i]);
         }
